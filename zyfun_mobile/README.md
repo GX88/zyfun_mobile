@@ -43,6 +43,8 @@ cd zyfun_mobile
 flutter pub get
 ```
 
+当前仓库已经包含 `android/`、`ios/`、`web/` 平台工程，拉取代码后直接执行 `flutter run` 即可。
+
 ### 运行应用
 
 ```bash

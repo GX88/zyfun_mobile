@@ -67,6 +67,15 @@ class SiteRepositoryImpl implements SiteRepository {
 
   @override
   Future<VideoDetail> getVideoDetail(String siteId, String videoId) async {
+    final site = await getSiteById(siteId);
+    if (site == null) {
+      return const VideoDetail(
+        video: Video.empty,
+        episodes: <String>[],
+        playUrls: <Map<String, String>>[],
+      );
+    }
+
     final videos = await searchVideos(siteId, videoId);
     final matched = videos.cast<Video?>().firstWhere(
           (video) => video?.id == videoId,
@@ -74,10 +83,19 @@ class SiteRepositoryImpl implements SiteRepository {
         );
 
     if (matched == null) {
-      return const VideoDetail(
-        video: Video.empty,
-        episodes: <String>[],
-        playUrls: <Map<String, String>>[],
+      final fallbackVideo = _buildDemoVideo(
+        site: site,
+        seed: 'detail-$videoId',
+        title: '视频详情',
+        description: '根据视频 ID 生成的演示详情数据。',
+        categoryName: '详情',
+      );
+
+      return VideoDetail(
+        video: fallbackVideo.copyWith(id: videoId),
+        episodes: fallbackVideo.episodes,
+        playUrls: fallbackVideo.playUrls,
+        detailUrl: fallbackVideo.detailUrl,
       );
     }
 
