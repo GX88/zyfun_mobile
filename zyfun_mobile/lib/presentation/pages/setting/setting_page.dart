@@ -3,8 +3,11 @@ import 'package:file_picker/file_picker.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shadcn_ui/shadcn_ui.dart';
 
+import '../../../data/services/config_import_service.dart';
 import '../../components/app_bottom_nav_bar.dart';
+import '../../providers/iptv_provider.dart';
 import '../../providers/setting_provider.dart';
+import '../../providers/site_provider.dart';
 
 class SettingPage extends ConsumerStatefulWidget {
   const SettingPage({super.key});
@@ -19,6 +22,8 @@ class _SettingPageState extends ConsumerState<SettingPage> {
 
   late final TextEditingController _pathController;
   bool _isImporting = false;
+  String? _importSummary;
+  bool _importSucceeded = false;
 
   @override
   void initState() {
@@ -140,9 +145,35 @@ class _SettingPageState extends ConsumerState<SettingPage> {
                     width: double.infinity,
                     child: ShadButton(
                       onPressed: _isImporting ? null : () => _importConfig(context),
-                      child: Text(_isImporting ? '导入中...' : '导入工作区配置'),
+                      child: Text(_isImporting ? '导入中...' : '导入配置'),
                     ),
                   ),
+                  if (_importSummary != null) ...<Widget>[
+                    const SizedBox(height: 12),
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: _importSucceeded
+                            ? theme.colorScheme.primary.withOpacity(0.08)
+                            : theme.colorScheme.destructive.withOpacity(0.08),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: _importSucceeded
+                              ? theme.colorScheme.primary.withOpacity(0.3)
+                              : theme.colorScheme.destructive.withOpacity(0.3),
+                        ),
+                      ),
+                      child: Text(
+                        _importSummary!,
+                        style: theme.textTheme.small.copyWith(
+                          color: _importSucceeded
+                              ? theme.colorScheme.primary
+                              : theme.colorScheme.destructive,
+                        ),
+                      ),
+                    ),
+                  ],
                 ],
               ),
             ),
@@ -154,32 +185,31 @@ class _SettingPageState extends ConsumerState<SettingPage> {
   }
 
   Future<void> _importConfig(BuildContext context) async {
-    final messenger = ScaffoldMessenger.of(context);
     setState(() {
       _isImporting = true;
+      _importSummary = null;
     });
 
     try {
       final result = await ref
           .read(settingNotifierProvider.notifier)
           .importDesktopConfigFile(_pathController.text.trim());
+      await _refreshImportedData();
       if (!mounted) {
         return;
       }
-      messenger.showSnackBar(
-        SnackBar(
-          content: Text(
-            '导入完成：站点 ${result.sitesImported}，直播源 ${result.iptvsImported}，解析 ${result.analyzesImported}，跳过 ${result.skippedSites}',
-          ),
-        ),
-      );
+      setState(() {
+        _importSucceeded = true;
+        _importSummary = _buildImportSummary(result);
+      });
     } catch (error) {
       if (!mounted) {
         return;
       }
-      messenger.showSnackBar(
-        SnackBar(content: Text('导入失败：$error')),
-      );
+      setState(() {
+        _importSucceeded = false;
+        _importSummary = '导入失败：$error';
+      });
     } finally {
       if (mounted) {
         setState(() {
@@ -193,15 +223,81 @@ class _SettingPageState extends ConsumerState<SettingPage> {
     final result = await FilePicker.platform.pickFiles(
       type: FileType.custom,
       allowedExtensions: const <String>['json'],
-      withData: false,
+      withData: true,
     );
-    final path = result?.files.single.path;
-    if (!mounted || path == null || path.isEmpty) {
+    final file = result?.files.single;
+    if (!mounted || file == null) {
       return;
     }
+
+    final bytes = file.bytes;
+    if (bytes != null && bytes.isNotEmpty) {
+      await _importPickedFileBytes(bytes, file.name);
+      return;
+    }
+
+    final path = file.path;
+    if (path == null || path.isEmpty) {
+      setState(() {
+        _importSucceeded = false;
+        _importSummary = '读取所选文件失败，请重新选择 JSON 文件。';
+      });
+      return;
+    }
+
     setState(() {
       _pathController.text = path;
     });
+  }
+
+  Future<void> _importPickedFileBytes(List<int> bytes, String fileName) async {
+    setState(() {
+      _isImporting = true;
+      _importSummary = null;
+    });
+
+    try {
+      final result = await ref
+          .read(settingNotifierProvider.notifier)
+          .importDesktopConfigBytes(bytes);
+      await _refreshImportedData();
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _importSucceeded = true;
+        _pathController.text = fileName;
+        _importSummary = _buildImportSummary(result);
+      });
+    } catch (error) {
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _importSucceeded = false;
+        _importSummary = '导入失败：$error';
+      });
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isImporting = false;
+        });
+      }
+    }
+  }
+
+  Future<void> _refreshImportedData() async {
+    await ref.read(siteNotifierProvider.notifier).loadSites();
+    await ref.read(iptvNotifierProvider.notifier).loadIptvs();
+  }
+
+  String _buildImportSummary(ConfigImportResult result) {
+    final summary =
+        '导入完成：站点 ${result.sitesImported}，直播源 ${result.iptvsImported}，解析 ${result.analyzesImported}。';
+    if (result.skippedSites > 0) {
+      return '$summary 跳过 ${result.skippedSites} 个暂不支持的站点类型。';
+    }
+    return summary;
   }
 }
 

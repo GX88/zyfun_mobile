@@ -68,6 +68,7 @@ class ConfigImportService {
 
     var importedSites = 0;
     var skippedSites = 0;
+    String? firstImportedSiteId;
     for (final row in siteRows) {
       final type = _asInt(row['type'], defaultValue: 1);
       if (type != 1) {
@@ -75,11 +76,16 @@ class ConfigImportService {
         continue;
       }
 
+      final siteId = _readFirstString(row, <String>['id', 'key', 'name']);
+      final siteKey = _readFirstString(row, <String>['key', 'name', 'id']);
+      final siteName = _readFirstString(row, <String>['name', 'key', 'id']);
+      final siteApi = _readFirstString(row, <String>['api', 'url']);
+
       final site = Site(
-        id: _asString(row['id']),
-        key: _asString(row['key']).isEmpty ? _asString(row['name']) : _asString(row['key']),
-        name: _asString(row['name']).isEmpty ? _asString(row['key']) : _asString(row['name']),
-        api: _asString(row['api']),
+        id: siteId,
+        key: siteKey,
+        name: siteName,
+        api: siteApi,
         playUrl: _asString(row['playUrl']).isEmpty
             ? _asString(row['jiexiUrl'])
             : _asString(row['playUrl']),
@@ -97,17 +103,21 @@ class ConfigImportService {
         continue;
       }
       await _siteRepository.addSite(site);
+      firstImportedSiteId ??= site.id;
       importedSites += 1;
     }
 
     var importedIptvs = 0;
+    String? firstImportedIptvId;
     for (final row in iptvRows) {
       final type = _mapIptvType(_asString(row['type']));
-      final source = _asString(row['url']);
+      final source = _readFirstString(row, <String>['url', 'api', 'content']);
+      final iptvId = _readFirstString(row, <String>['id', 'key', 'name']);
+      final iptvName = _readFirstString(row, <String>['name', 'key', 'id']);
       final iptv = Iptv(
-        id: _asString(row['id']),
-        key: _asString(row['name']),
-        name: _asString(row['name']),
+        id: iptvId,
+        key: iptvName,
+        name: iptvName,
         api: source,
         type: type,
         epg: _asString(row['epg']),
@@ -119,17 +129,21 @@ class ConfigImportService {
         continue;
       }
       await _iptvRepository.addIptv(iptv);
+      firstImportedIptvId ??= iptv.id;
       importedIptvs += 1;
     }
 
     final analyzeFlag = _readListSetting(settingRows, 'analyzeFlag');
     var importedAnalyzes = 0;
+    String? firstImportedAnalyzeId;
     for (final row in analyzeRows) {
+      final analyzeId = _readFirstString(row, <String>['id', 'key', 'name']);
+      final analyzeName = _readFirstString(row, <String>['name', 'key', 'id']);
       final analyze = Analyze(
-        id: _asString(row['id']),
-        key: _asString(row['name']),
-        name: _asString(row['name']),
-        api: _asString(row['url']),
+        id: analyzeId,
+        key: analyzeName,
+        name: analyzeName,
+        api: _readFirstString(row, <String>['url', 'api']),
         type: 1,
         flag: analyzeFlag,
         isActive: _asBool(row['isActive'], fallback: true),
@@ -140,15 +154,28 @@ class ConfigImportService {
         continue;
       }
       await _analyzeRepository.addAnalyze(analyze);
+      firstImportedAnalyzeId ??= analyze.id;
       importedAnalyzes += 1;
     }
 
     final setting = await _buildSettingFromRows(settingRows);
     await _settingRepository.importSetting(setting);
 
-    final defaultSite = _readStringSetting(settingRows, 'defaultSite');
-    final defaultIptv = _readStringSetting(settingRows, 'defaultIptv');
-    final defaultAnalyze = _readStringSetting(settingRows, 'defaultAnalyze');
+    final defaultSite = _readStringSetting(
+      settingRows,
+      'defaultSite',
+      fallback: firstImportedSiteId ?? '',
+    );
+    final defaultIptv = _readStringSetting(
+      settingRows,
+      'defaultIptv',
+      fallback: firstImportedIptvId ?? '',
+    );
+    final defaultAnalyze = _readStringSetting(
+      settingRows,
+      'defaultAnalyze',
+      fallback: firstImportedAnalyzeId ?? '',
+    );
 
     if (defaultSite.isNotEmpty) {
       await _siteRepository.setDefaultSite(defaultSite);
@@ -265,6 +292,16 @@ class ConfigImportService {
       return '';
     }
     return value.toString().trim();
+  }
+
+  String _readFirstString(Map<String, dynamic> row, List<String> keys) {
+    for (final key in keys) {
+      final value = _asString(row[key]);
+      if (value.isNotEmpty) {
+        return value;
+      }
+    }
+    return '';
   }
 
   int _asInt(Object? value, {int defaultValue = 0}) {

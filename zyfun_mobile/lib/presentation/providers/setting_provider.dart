@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -33,6 +34,15 @@ class SettingNotifier extends StateNotifier<Setting> {
 
   Future<ConfigImportResult> importDesktopConfigFile(String path) async {
     final content = await File(path).readAsString();
+    return importDesktopConfigContent(content);
+  }
+
+  Future<ConfigImportResult> importDesktopConfigBytes(List<int> bytes) async {
+    final content = utf8.decode(bytes);
+    return importDesktopConfigContent(content);
+  }
+
+  Future<ConfigImportResult> importDesktopConfigContent(String content) async {
     final result = await _configImportService.importDesktopConfig(content);
     await load();
     return result;

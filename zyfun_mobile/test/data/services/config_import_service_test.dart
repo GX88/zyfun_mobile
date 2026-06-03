@@ -91,6 +91,59 @@ void main() {
     expect(iptvRepository.defaultIptvId, 'iptv-1');
     expect(analyzeRepository.defaultAnalyzeId, 'analyze-1');
   });
+
+  test('ConfigImportService 支持 url 字段并回退选择首个默认项', () async {
+    final siteRepository = FakeSiteRepository();
+    final iptvRepository = FakeIptvRepository();
+    final analyzeRepository = FakeAnalyzeRepository();
+    final settingRepository = FakeSettingRepository();
+    final service = ConfigImportService(
+      siteRepository: siteRepository,
+      iptvRepository: iptvRepository,
+      analyzeRepository: analyzeRepository,
+      settingRepository: settingRepository,
+    );
+
+    final json = jsonEncode(<String, Object?>{
+      'tbl_site': <Map<String, Object?>>[
+        <String, Object?>{
+          'key': 'site-a',
+          'name': '站点A',
+          'url': 'https://example.com/a',
+          'type': 1,
+        },
+      ],
+      'tbl_iptv': <Map<String, Object?>>[
+        <String, Object?>{
+          'name': '直播A',
+          'content': '#EXTM3U\n#EXTINF:-1,频道A\nhttps://example.com/live.m3u8',
+          'type': 'batches',
+        },
+      ],
+      'tbl_analyze': <Map<String, Object?>>[
+        <String, Object?>{
+          'name': '解析A',
+          'api': 'https://jx.example.com/?url=',
+        },
+      ],
+      'tbl_setting': <Map<String, Object?>>[
+        <String, Object?>{'key': 'theme', 'value': 'dark'},
+      ],
+    });
+
+    final result = await service.importDesktopConfig(json);
+
+    expect(result.sitesImported, 1);
+    expect(result.iptvsImported, 1);
+    expect(result.analyzesImported, 1);
+    expect(siteRepository.sites.single.id, 'site-a');
+    expect(siteRepository.sites.single.api, 'https://example.com/a');
+    expect(siteRepository.defaultSiteId, 'site-a');
+    expect(iptvRepository.iptvs.single.id, '直播A');
+    expect(iptvRepository.defaultIptvId, '直播A');
+    expect(analyzeRepository.analyzes.single.id, '解析A');
+    expect(analyzeRepository.defaultAnalyzeId, '解析A');
+  });
 }
 
 class FakeSiteRepository implements SiteRepository {
