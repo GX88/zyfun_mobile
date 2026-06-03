@@ -18,6 +18,31 @@ subprojects {
 
 subprojects {
     afterEvaluate {
+        extensions.findByName("android")?.let { extension ->
+            val androidExtensionClass = extension.javaClass
+            val compileSdkMethod = androidExtensionClass.methods.firstOrNull {
+                it.name == "setCompileSdk" &&
+                    it.parameterCount == 1 &&
+                    (it.parameterTypes[0] == Int::class.javaPrimitiveType ||
+                        it.parameterTypes[0] == Integer::class.java)
+            }
+            val compileSdkVersionMethod = androidExtensionClass.methods.firstOrNull {
+                it.name == "setCompileSdkVersion" && it.parameterCount == 1
+            }
+
+            when {
+                compileSdkMethod != null -> compileSdkMethod.invoke(extension, 36)
+                compileSdkVersionMethod != null -> {
+                    val parameterType = compileSdkVersionMethod.parameterTypes[0]
+                    if (parameterType == String::class.java) {
+                        compileSdkVersionMethod.invoke(extension, "android-36")
+                    } else {
+                        compileSdkVersionMethod.invoke(extension, 36)
+                    }
+                }
+            }
+        }
+
         if (name == "fijkplayer") {
             extensions.findByName("android")?.let { extension ->
                 val androidExtensionClass = extension.javaClass

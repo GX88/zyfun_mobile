@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shadcn_ui/shadcn_ui.dart';
 
@@ -123,8 +124,16 @@ class _SettingPageState extends ConsumerState<SettingPage> {
                   ),
                   const SizedBox(height: 12),
                   Text(
-                    '默认已指向当前上传的配置文件，可直接导入。',
+                    '支持直接选择手机本地 JSON 文件，也支持手动填写工作区路径。',
                     style: theme.textTheme.small,
+                  ),
+                  const SizedBox(height: 12),
+                  SizedBox(
+                    width: double.infinity,
+                    child: ShadButton.outline(
+                      onPressed: _isImporting ? null : _pickLocalConfigFile,
+                      child: const Text('选择本地 JSON 文件'),
+                    ),
                   ),
                   const SizedBox(height: 12),
                   SizedBox(
@@ -178,6 +187,21 @@ class _SettingPageState extends ConsumerState<SettingPage> {
         });
       }
     }
+  }
+
+  Future<void> _pickLocalConfigFile() async {
+    final result = await FilePicker.platform.pickFiles(
+      type: FileType.custom,
+      allowedExtensions: const <String>['json'],
+      withData: false,
+    );
+    final path = result?.files.single.path;
+    if (!mounted || path == null || path.isEmpty) {
+      return;
+    }
+    setState(() {
+      _pathController.text = path;
+    });
   }
 }
 
