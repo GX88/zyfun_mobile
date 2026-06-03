@@ -249,6 +249,9 @@ class _VideoCard extends StatelessWidget {
 
   final Video video;
 
+  static const String _demoPlayableUrl =
+      'https://flutter.github.io/assets-for-api-docs/assets/videos/bee.mp4';
+
   @override
   Widget build(BuildContext context) {
     final theme = ShadTheme.of(context);
@@ -260,6 +263,31 @@ class _VideoCard extends StatelessWidget {
         children: <Widget>[
           Text(video.type ?? '未分类', style: theme.textTheme.small),
           const Spacer(),
+          ShadButton(
+            onPressed: () {
+              final candidateUrl = video.playUrls.isNotEmpty
+                  ? (video.playUrls.first['url'] ?? '')
+                  : '';
+              final resolvedUrl = candidateUrl.contains('example.com') ||
+                      candidateUrl.isEmpty
+                  ? _demoPlayableUrl
+                  : candidateUrl;
+              final episodeName = video.playUrls.isNotEmpty
+                  ? video.playUrls.first['name']
+                  : '演示播放';
+              final uri = Uri(
+                path: '/player/${video.id}',
+                queryParameters: <String, String>{
+                  'title': video.title,
+                  'url': resolvedUrl,
+                  'episode': episodeName ?? '演示播放',
+                },
+              );
+              context.push(uri.toString());
+            },
+            child: const Text('播放'),
+          ),
+          const SizedBox(width: 8),
           ShadButton.outline(
             onPressed: () => context.push('/detail/${video.id}'),
             child: const Text('详情'),

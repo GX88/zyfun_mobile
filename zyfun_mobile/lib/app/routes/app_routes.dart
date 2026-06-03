@@ -5,6 +5,7 @@ import 'package:shadcn_ui/shadcn_ui.dart';
 import '../../presentation/pages/film/film_page.dart';
 import '../../presentation/pages/history/history_page.dart';
 import '../../presentation/pages/live/live_page.dart';
+import '../../presentation/pages/player/player_page.dart';
 import '../../presentation/pages/search/search_page.dart';
 import '../../presentation/pages/setting/setting_page.dart';
 
@@ -73,7 +74,15 @@ final GoRouter router = GoRouter(
       name: 'player',
       builder: (context, state) {
         final id = state.pathParameters['id']!;
-        return PlaceholderPage(title: '播放器 - $id');
+        final title = state.uri.queryParameters['title'] ?? '播放器';
+        final playUrl = state.uri.queryParameters['url'] ?? '';
+        final episode = state.uri.queryParameters['episode'];
+        return PlayerPage(
+          id: id,
+          title: title,
+          playUrl: playUrl,
+          episode: episode,
+        );
       },
     ),
     
