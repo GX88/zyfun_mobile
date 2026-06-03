@@ -1,6 +1,7 @@
 import '../../domain/repositories/iptv_repository.dart';
 import '../datasources/local/dao/iptv_dao.dart';
 import '../datasources/local/key_value_storage.dart';
+import '../datasources/remote/iptv_api.dart';
 import '../../core/constants/constants.dart';
 import '../models/iptv.dart';
 
@@ -8,11 +9,14 @@ class IptvRepositoryImpl implements IptvRepository {
   IptvRepositoryImpl({
     required IptvDao iptvDao,
     required KeyValueStorage storage,
+    IptvApi? iptvApi,
   })  : _iptvDao = iptvDao,
-        _storage = storage;
+        _storage = storage,
+        _iptvApi = iptvApi;
 
   final IptvDao _iptvDao;
   final KeyValueStorage _storage;
+  final IptvApi? _iptvApi;
 
   @override
   Future<void> addIptv(Iptv iptv) async {
@@ -31,7 +35,16 @@ class IptvRepositoryImpl implements IptvRepository {
 
   @override
   Future<List<Channel>> getChannels(String iptvId) async {
-    return const <Channel>[];
+    final iptv = await getIptvById(iptvId);
+    if (iptv == null) {
+      return const <Channel>[];
+    }
+
+    if (_iptvApi == null) {
+      return const <Channel>[];
+    }
+
+    return _iptvApi.getChannels(iptv);
   }
 
   @override
@@ -46,7 +59,11 @@ class IptvRepositoryImpl implements IptvRepository {
 
   @override
   Future<List<Channel>> parseM3u(String content) async {
-    return const <Channel>[];
+    if (_iptvApi == null) {
+      return const <Channel>[];
+    }
+
+    return _iptvApi.parseM3u(content);
   }
 
   @override

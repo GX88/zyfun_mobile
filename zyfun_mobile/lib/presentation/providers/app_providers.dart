@@ -4,6 +4,9 @@ import '../../data/datasources/local/app_database.dart';
 import '../../data/datasources/local/dao/dao.dart';
 import '../../data/datasources/local/key_value_storage.dart';
 import '../../data/datasources/remote/api_client.dart';
+import '../../data/datasources/remote/iptv_api.dart';
+import '../../data/datasources/remote/parse_api.dart';
+import '../../data/datasources/remote/site_api.dart';
 import '../../data/repositories/analyze_repository_impl.dart';
 import '../../data/repositories/history_repository_impl.dart';
 import '../../data/repositories/iptv_repository_impl.dart';
@@ -25,6 +28,18 @@ final keyValueStorageProvider = Provider<KeyValueStorage>((ref) {
 
 final apiClientProvider = Provider<ApiClient>((ref) {
   return ApiClient();
+});
+
+final siteApiProvider = Provider<SiteApi>((ref) {
+  return SiteApi(apiClient: ref.watch(apiClientProvider));
+});
+
+final iptvApiProvider = Provider<IptvApi>((ref) {
+  return IptvApi(apiClient: ref.watch(apiClientProvider));
+});
+
+final parseApiProvider = Provider<ParseApi>((ref) {
+  return ParseApi(apiClient: ref.watch(apiClientProvider));
 });
 
 final siteDaoProvider = Provider<SiteDao>((ref) {
@@ -51,6 +66,9 @@ final siteRepositoryProvider = Provider<SiteRepository>((ref) {
   return SiteRepositoryImpl(
     siteDao: ref.watch(siteDaoProvider),
     storage: ref.watch(keyValueStorageProvider),
+    siteApi: ref.watch(siteApiProvider),
+    analyzeRepository: ref.watch(analyzeRepositoryProvider),
+    parseApi: ref.watch(parseApiProvider),
   );
 });
 
@@ -62,6 +80,7 @@ final iptvRepositoryProvider = Provider<IptvRepository>((ref) {
   return IptvRepositoryImpl(
     iptvDao: ref.watch(iptvDaoProvider),
     storage: ref.watch(keyValueStorageProvider),
+    iptvApi: ref.watch(iptvApiProvider),
   );
 });
 

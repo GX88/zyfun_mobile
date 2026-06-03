@@ -9,6 +9,9 @@ import 'package:zyfun_mobile/core/constants/constants.dart';
 import 'package:zyfun_mobile/data/datasources/local/app_database.dart';
 import 'package:zyfun_mobile/data/datasources/local/dao/dao.dart';
 import 'package:zyfun_mobile/data/datasources/local/key_value_storage.dart';
+import 'package:zyfun_mobile/data/datasources/remote/api_client.dart';
+import 'package:zyfun_mobile/data/datasources/remote/iptv_api.dart';
+import 'package:zyfun_mobile/data/datasources/remote/parse_api.dart';
 import 'package:zyfun_mobile/data/models/analyze.dart';
 import 'package:zyfun_mobile/data/models/history.dart';
 import 'package:zyfun_mobile/data/models/iptv.dart';
@@ -49,9 +52,15 @@ void main() {
       databaseFactory: databaseFactoryFfi,
     );
 
+    analyzeRepository = AnalyzeRepositoryImpl(
+      analyzeDao: AnalyzeDao(database: appDatabase),
+      storage: storage,
+    );
     siteRepository = SiteRepositoryImpl(
       siteDao: SiteDao(database: appDatabase),
       storage: storage,
+      analyzeRepository: analyzeRepository,
+      parseApi: ParseApi(apiClient: ApiClient(enableLog: false)),
     );
     historyRepository = HistoryRepositoryImpl(
       historyDao: HistoryDao(database: appDatabase),
@@ -59,10 +68,7 @@ void main() {
     iptvRepository = IptvRepositoryImpl(
       iptvDao: IptvDao(database: appDatabase),
       storage: storage,
-    );
-    analyzeRepository = AnalyzeRepositoryImpl(
-      analyzeDao: AnalyzeDao(database: appDatabase),
-      storage: storage,
+      iptvApi: IptvApi(apiClient: ApiClient(enableLog: false)),
     );
     settingRepository = SettingRepositoryImpl(
       settingDao: SettingDao(database: appDatabase),
@@ -153,6 +159,39 @@ void main() {
       expect(await siteRepository.searchVideos(site.id, '  '), isEmpty);
       expect(await siteRepository.getCategories('missing-site'), isEmpty);
     });
+
+    test('优先使用默认解析源生成播放地址', () async {
+      const site = Site(
+        id: 'site-1',
+        key: 'demo',
+        name: '演示站点',
+        api: 'https://example.com/api',
+        createdAt: 1,
+        updatedAt: 2,
+      );
+      const analyze = Analyze(
+        id: 'analyze-1',
+        key: 'web',
+        name: '网页解析',
+        api: 'https://jx.example.com/?url=',
+        createdAt: 1,
+        updatedAt: 2,
+      );
+
+      await siteRepository.addSite(site);
+      await analyzeRepository.addAnalyze(analyze);
+      await analyzeRepository.setDefaultAnalyze(analyze.id);
+
+      final playUrl = await siteRepository.getPlayUrl(
+        site.id,
+        'https://video.example.com/play?id=9',
+      );
+
+      expect(
+        playUrl,
+        'https://jx.example.com/?url=https%3A%2F%2Fvideo.example.com%2Fplay%3Fid%3D9',
+      );
+    });
   });
 
   group('HistoryRepositoryImpl', () {
@@ -194,7 +233,7 @@ void main() {
   });
 
   group('IptvRepositoryImpl', () {
-    test('支持直播源 CRUD、默认值读写和占位方法返回', () async {
+    test('支持直播源 CRUD、默认值读写和 M3U 解析', () async {
       const iptv = Iptv(
         id: 'iptv-1',
         key: 'demo-live',
@@ -218,10 +257,30 @@ void main() {
       await iptvRepository.updateIptv(iptv.copyWith(name: '演示直播源2'));
       expect((await iptvRepository.getIptvById(iptv.id))?.name, '演示直播源2');
 
-      expect(await iptvRepository.getChannels(iptv.id), isEmpty);
-      expect(await iptvRepository.parseM3u('#EXTM3U'), isEmpty);
+      final parsedChannels = await iptvRepository.parseM3u('''
+#EXTM3U
+#EXTINF:-1 group-title="测试",示例频道
+https://live.example.com/demo.m3u8
+''');
+      expect(parsedChannels, hasLength(1));
+      expect(parsedChannels.single.name, '示例频道');
+
+      final textSource = iptv.copyWith(
+        id: 'iptv-2',
+        type: 3,
+        api: '''
+#EXTM3U
+#EXTINF:-1 group-title="测试",文本频道
+https://live.example.com/text.m3u8
+''',
+      );
+      await iptvRepository.addIptv(textSource);
+      final channels = await iptvRepository.getChannels(textSource.id);
+      expect(channels, hasLength(1));
+      expect(channels.single.name, '文本频道');
 
       await iptvRepository.deleteIptv(iptv.id);
+      await iptvRepository.deleteIptv(textSource.id);
       expect(await iptvRepository.getAllIptvs(), isEmpty);
     });
   });

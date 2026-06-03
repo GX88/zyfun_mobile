@@ -1,7 +1,11 @@
 import '../../core/constants/constants.dart';
+import '../../domain/repositories/analyze_repository.dart';
 import '../../domain/repositories/site_repository.dart';
 import '../datasources/local/dao/site_dao.dart';
 import '../datasources/local/key_value_storage.dart';
+import '../datasources/remote/parse_api.dart';
+import '../datasources/remote/site_api.dart';
+import '../models/analyze.dart';
 import '../models/site.dart';
 import '../models/video.dart';
 
@@ -9,11 +13,20 @@ class SiteRepositoryImpl implements SiteRepository {
   SiteRepositoryImpl({
     required SiteDao siteDao,
     required KeyValueStorage storage,
+    SiteApi? siteApi,
+    AnalyzeRepository? analyzeRepository,
+    ParseApi? parseApi,
   })  : _siteDao = siteDao,
-        _storage = storage;
+        _storage = storage,
+        _siteApi = siteApi,
+        _analyzeRepository = analyzeRepository,
+        _parseApi = parseApi;
 
   final SiteDao _siteDao;
   final KeyValueStorage _storage;
+  final SiteApi? _siteApi;
+  final AnalyzeRepository? _analyzeRepository;
+  final ParseApi? _parseApi;
 
   @override
   Future<void> addSite(Site site) async {
@@ -35,6 +48,17 @@ class SiteRepositoryImpl implements SiteRepository {
     final site = await getSiteById(siteId);
     if (site == null) {
       return const <Category>[];
+    }
+
+    if (_siteApi != null) {
+      try {
+        final categories = await _siteApi.getCategories(site);
+        if (categories.isNotEmpty) {
+          return categories;
+        }
+      } catch (_) {
+        // Keep demo fallback for unfinished API adapters.
+      }
     }
 
     final names = site.categories
@@ -76,6 +100,17 @@ class SiteRepositoryImpl implements SiteRepository {
       );
     }
 
+    if (_siteApi != null) {
+      try {
+        final detail = await _siteApi.getVideoDetail(site, videoId);
+        if (detail != null) {
+          return detail;
+        }
+      } catch (_) {
+        // Keep demo fallback for unfinished API adapters.
+      }
+    }
+
     final videos = await searchVideos(siteId, videoId);
     final matched = videos.cast<Video?>().firstWhere(
           (video) => video?.id == videoId,
@@ -109,7 +144,60 @@ class SiteRepositoryImpl implements SiteRepository {
 
   @override
   Future<String> getPlayUrl(String siteId, String episodeUrl) async {
-    return episodeUrl;
+    if (_analyzeRepository == null || _parseApi == null) {
+      return episodeUrl;
+    }
+
+    final analyzes = await _analyzeRepository.getAllAnalyzes();
+    final activeAnalyzes = analyzes.where((item) => item.isActive).toList();
+    if (activeAnalyzes.isEmpty) {
+      return episodeUrl;
+    }
+
+    final defaultAnalyzeId = await _analyzeRepository.getDefaultAnalyze();
+    final analyze = _pickAnalyze(
+      analyzes: activeAnalyzes,
+      defaultAnalyzeId: defaultAnalyzeId,
+      episodeUrl: episodeUrl,
+    );
+    if (analyze == null) {
+      return episodeUrl;
+    }
+
+    return _parseApi.resolvePlayUrl(
+      analyze: analyze,
+      episodeUrl: episodeUrl,
+    );
+  }
+
+  Analyze? _pickAnalyze({
+    required List<Analyze> analyzes,
+    required String? defaultAnalyzeId,
+    required String episodeUrl,
+  }) {
+    final defaultAnalyze = analyzes.cast<Analyze?>().firstWhere(
+          (item) => item?.id == defaultAnalyzeId,
+          orElse: () => null,
+        );
+    if (defaultAnalyze != null && _matchesFlag(defaultAnalyze, episodeUrl)) {
+      return defaultAnalyze;
+    }
+
+    return analyzes.cast<Analyze?>().firstWhere(
+      (item) => item != null && _matchesFlag(item, episodeUrl),
+      orElse: () => analyzes.first,
+    );
+  }
+
+  bool _matchesFlag(Analyze analyze, String episodeUrl) {
+    if (analyze.flag.isEmpty) {
+      return true;
+    }
+
+    final normalizedUrl = episodeUrl.toLowerCase();
+    return analyze.flag.any(
+      (flag) => normalizedUrl.contains(flag.toLowerCase()),
+    );
   }
 
   @override
@@ -120,6 +208,17 @@ class SiteRepositoryImpl implements SiteRepository {
   @override
   Future<List<Video>> getVideosByCategory(String siteId, String categoryId, int page) async {
     final site = await getSiteById(siteId);
+    if (site != null && _siteApi != null) {
+      try {
+        final remoteVideos = await _siteApi.getVideosByCategory(site, categoryId, page);
+        if (remoteVideos.isNotEmpty) {
+          return remoteVideos;
+        }
+      } catch (_) {
+        // Keep demo fallback for unfinished API adapters.
+      }
+    }
+
     final categories = await getCategories(siteId);
     final category = categories.cast<Category?>().firstWhere(
           (item) => item?.id == categoryId,
@@ -147,6 +246,17 @@ class SiteRepositoryImpl implements SiteRepository {
     final site = await getSiteById(siteId);
     if (site == null || keyword.trim().isEmpty) {
       return const <Video>[];
+    }
+
+    if (_siteApi != null) {
+      try {
+        final remoteVideos = await _siteApi.searchVideos(site, keyword);
+        if (remoteVideos.isNotEmpty) {
+          return remoteVideos;
+        }
+      } catch (_) {
+        // Keep demo fallback for unfinished API adapters.
+      }
     }
 
     final normalized = keyword.trim();

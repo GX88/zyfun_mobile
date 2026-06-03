@@ -40,9 +40,6 @@ dependencies:
   shared_preferences: ^2.2.0
   flutter_secure_storage: ^9.0.0
 
-  # 播放器
-  fijkplayer: ^0.10.0
-
   # 权限管理
   permission_handler: ^11.0.0
 

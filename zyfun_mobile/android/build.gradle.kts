@@ -15,6 +15,21 @@ subprojects {
     val newSubprojectBuildDir: Directory = newBuildDir.dir(project.name)
     project.layout.buildDirectory.value(newSubprojectBuildDir)
 }
+
+subprojects {
+    afterEvaluate {
+        if (name == "fijkplayer") {
+            extensions.findByName("android")?.let { extension ->
+                val androidExtensionClass = extension.javaClass
+                val namespaceMethod = androidExtensionClass.methods.firstOrNull {
+                    it.name == "setNamespace" && it.parameterCount == 1
+                }
+                namespaceMethod?.invoke(extension, "com.befovy.fijkplayer")
+            }
+        }
+    }
+}
+
 subprojects {
     project.evaluationDependsOn(":app")
 }
