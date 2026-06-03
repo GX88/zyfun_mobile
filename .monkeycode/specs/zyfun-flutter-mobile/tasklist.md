@@ -1,0 +1,488 @@
+# zyfun Flutter 移动端实施计划
+
+- [x] 1. 初始化 Flutter 项目结构
+  - [x] 1.1 创建 Flutter 项目并配置基础依赖
+    - 使用 `flutter create zyfun_mobile` 创建项目
+    - 配置 `pubspec.yaml` 添加核心依赖 (riverpod, dio, go_router, json_serializable, sqflite)
+    - 配置代码生成工具 (build_runner, json_serializable, riverpod_generator)
+    - 安装 shadcn_ui: `flutter pub add shadcn_ui lucide_icons_flutter`
+    - 参考文档：`.monkeycode/specs/zyfun-flutter-mobile/shadcn-ui-quickstart.md`
+  - [x] 1.2 创建分层目录结构
+    - 创建 `lib/core/`, `lib/data/`, `lib/domain/`, `lib/presentation/`, `lib/services/` 目录
+    - 创建数据模型、仓库、服务、页面、组件子目录
+    - 创建 `lib/presentation/shadcn/` 目录存放 shadcn_ui 封装组件
+    - 参考 design.md 第 2.4 节的目录结构
+  - [x] 1.3 配置多环境支持
+    - 创建 `lib/config/` 目录，添加开发/生产环境配置
+    - 配置 API 基础 URL、超时时间、日志级别
+  - [x] 1.4 安装 Agent Skills (可选)
+    - 运行 `npx skills add nank1ro/flutter-shadcn-ui` 安装 shadcn_ui 的 MCP 技能
+    - 用于 AI 辅助生成 shadcn_ui 组件代码
+  - [x]* 1.5 编写项目初始化单元测试
+    - 测试依赖注入容器初始化
+    - 测试路由配置正确性
+    - 测试 shadcn_ui 主题配置
+
+- [x] 2. 实现核心数据模型
+  - [x] 2.1 创建站点 (Site) 数据模型
+    - 实现 `Site` 类，包含 id, key, name, api, type, ext 等字段 (参考 design.md 5.1)
+    - 添加 JSON 序列化支持 (`@JsonSerializable()`)
+    - 实现字段验证 (非空检查、URL 格式验证)
+  - [x] 2.2 创建直播源 (Iptv) 数据模型
+    - 实现 `Iptv` 类，包含 id, name, api, type, epg, logo 等字段
+    - 添加 JSON 序列化支持
+    - 实现 EPG 和 Logo URL 验证
+  - [x] 2.3 创建解析接口 (Analyze) 数据模型
+    - 实现 `Analyze` 类，包含 id, name, api, type, flag, script 等字段
+    - 区分 Web 型和 JSON 型解析
+  - [x] 2.4 创建设置 (Setting) 数据模型
+    - 实现 `Setting` 类及其嵌套配置 (ProxyConfig, PlayerConfig, DanmakuConfig 等)
+    - 参考 design.md 3.2.4 节
+    - 实现主题、语言、代理等配置序列化
+  - [x] 2.5 创建视频和播放历史模型
+    - 实现 `Video`, `VideoDetail`, `History` 类
+    - 添加播放进度、时长、时间戳字段
+    - 实现历史记录的自动清理逻辑 (超过 30 天)
+  - [x] 2.6 创建收藏模型
+    - 实现 `Favorite` 类，包含视频信息和收藏时间
+  - [x]* 2.7 为数据模型编写单元测试
+    - 测试 JSON 序列化/反序列化
+    - 测试数据验证逻辑
+    - 测试边界情况 (空值、异常数据)
+
+- [x] 3. 检查点 - 确保所有数据模型通过测试
+  - 运行 `flutter test` 验证所有模型测试通过
+
+- [x] 4. 实现本地数据存储层
+  - [x] 4.1 实现数据库连接工具
+    - 创建 `DatabaseHelper` 类，使用 sqflite 或 isar
+    - 实现数据库初始化和版本管理
+    - 实现单例模式和连接池管理
+  - [x] 4.2 创建数据库表结构
+    - 实现 sites, iptvs, analyzes, histories, favorites, settings 表 (参考 design.md 5.1)
+    - 创建索引优化查询性能
+    - 实现数据库迁移脚本 (onUpgrade)
+  - [x] 4.3 实现键值对存储
+    - 使用 `shared_preferences` 存储轻量级配置
+    - 实现加密存储敏感数据 (使用 `flutter_secure_storage`)
+  - [x] 4.4 实现数据访问对象 (DAO)
+    - 创建 `SiteDao`, `IptvDao`, `HistoryDao` 等
+    - 实现 CRUD 操作接口
+    - 实现批量操作和事务支持
+  - [x]* 4.5 为数据库操作编写单元测试
+    - 测试表的创建和初始化
+    - 测试 CRUD 操作正确性
+    - 测试事务原子性
+
+- [ ] 5. 实现数据仓库层
+  - [x] 5.1 定义仓库接口
+    - 创建 `SiteRepository`, `IptvRepository`, `AnalyzeRepository` 抽象类
+    - 定义标准 CRUD 接口 (参考 design.md 3.3.1)
+    - 定义业务方法 (search, getCategories, getPlayUrl 等)
+  - [x] 5.2 实现站点仓库
+    - 实现 `SiteRepositoryImpl` 类
+    - 集成远程 API 和本地数据库
+    - 实现缓存策略 (优先本地，定期同步)
+  - [x] 5.3 实现直播源仓库
+    - 实现 `IptvRepositoryImpl` 类
+    - 支持 M3U 格式解析
+    - 实现 EPG 数据获取和缓存
+  - [x] 5.4 实现解析接口仓库
+    - 实现 `AnalyzeRepositoryImpl` 类
+    - 实现解析接口的增删改查
+    - 实现默认解析设置
+  - [x] 5.5 实现历史仓库
+    - 实现 `HistoryRepositoryImpl` 类
+    - 实现播放历史的自动保存和更新
+    - 实现历史记录的分页查询
+  - [x] 5.6 实现设置仓库
+    - 实现 `SettingRepositoryImpl` 类
+    - 实现配置的读取和更新
+    - 实现配置的导入导出 (JSON)
+  - [ ]* 5.7 为仓库层编写单元测试
+    - 测试仓库接口实现
+    - 测试数据缓存逻辑
+    - 使用 mock 测试远程 API 调用
+
+- [ ] 6. 检查点 - 验证数据层功能
+  - 确保所有仓库的 CRUD 操作正常工作
+  - 如有问题请询问用户
+
+- [ ] 7. 实现 API 客户端
+  - [ ] 7.1 配置 Dio HTTP 客户端
+    - 创建 `ApiClient` 类，配置 Dio 实例
+    - 设置基础 URL、超时时间、请求头
+    - 配置日志拦截器和错误拦截器
+  - [ ] 7.2 实现站点 API 服务
+    - 创建 `SiteApi` 类，实现视频站点接口调用
+    - 实现搜索、分类列表、视频列表、详情获取方法
+    - 适配 T0-T4 不同接口类型
+  - [ ] 7.3 实现直播 API 服务
+    - 创建 `IptvApi` 类，实现直播源获取
+    - 实现 M3U 远程文件下载和解析
+    - 实现 EPG 数据获取
+  - [ ] 7.4 实现解析 API 服务
+    - 创建 `ParseApi` 类，实现解析接口调用
+    - 支持 Web 型和 JSON 型解析
+    - 实现解析结果的提取和验证
+  - [ ] 7.5 实现错误处理
+    - 定义 `AppException` 和 `AppErrorType` (参考 design.md 7.1)
+    - 实现全局错误拦截和转换
+    - 实现自动重试机制 (最多 3 次)
+  - [ ]* 7.6 为 API 客户端编写单元测试
+    - 使用 mock 测试网络请求
+    - 测试错误处理和重试逻辑
+    - 测试超时和取消请求
+
+- [x] 8. 实现状态管理层
+  - [x] 8.1 配置 Riverpod 依赖注入
+    - 初始化 Riverpod 容器
+    - 创建 Provider 配置文件
+    - 实现 Provider 的模块化组织
+  - [x] 8.2 实现站点状态管理
+    - 创建 `siteProvider` 和 `SiteNotifier`
+    - 管理站点列表加载、刷新、选中状态
+    - 实现站点数据的持久化同步
+  - [ ] 8.3 实现直播源状态管理
+    - 创建 `iptvProvider` 和 `IptvNotifier`
+    - 管理直播源列表和频道列表
+    - 实现 EPG 数据的异步加载
+  - [ ] 8.4 实现播放器状态管理
+    - 创建 `playerProvider` 和 `PlayerNotifier`
+    - 管理播放状态 (播放/暂停/缓冲/完成)
+    - 管理播放进度、倍速、音量等参数
+  - [x] 8.5 实现设置状态管理
+    - 创建 `settingProvider` 和 `SettingNotifier`
+    - 实现主题的响应式切换
+    - 实现其他配置的实时更新
+  - [ ]* 8.6 为状态管理编写单元测试
+    - 测试 Provider 的状态变化
+    - 测试状态持久化
+    - 测试多 Provider 协同工作
+
+- [ ] 9. 检查点 - 验证状态管理
+  - 确保所有 Provider 正常工作
+  - 状态变化能正确触发 UI 更新
+  - 如有问题请询问用户
+
+- [ ] 10. 实现 UI 组件库 (基于 shadcn_ui)
+  - [x] 10.1 安装 shadcn_ui 依赖
+    - 运行 `flutter pub add shadcn_ui` (最新版本 0.54.0)
+    - 添加依赖到 pubspec.yaml: `shadcn_ui: ^0.54.0`
+    - 运行 `flutter pub get` 安装依赖
+  - [x] 10.2 配置 ShadApp 和主题系统
+    - 导入 `import 'package:shadcn_ui/shadcn_ui.dart';`
+    - 配置亮色主题：`ShadThemeData(brightness: Brightness.light, colorScheme: const ShadZincColorScheme.light())`
+    - 配置暗色主题：`ShadThemeData(brightness: Brightness.dark, colorScheme: const ShadSlateColorScheme.dark())`
+    - 实现主题切换：设置 `themeMode: ThemeMode.system` 支持跟随系统
+  - [x] 10.3 集成 Lucide 图标库
+    - 添加依赖：`flutter pub add lucide_icons_flutter`
+    - 导入图标：`import 'package:lucide_icons_flutter/lucide_icons_flutter.dart';`
+    - 使用示例：`Icon(LucideIcons.mail)`
+  - [ ] 10.4 使用 shadcn_ui 核心组件
+    - **按钮**: ShadButton (primary, secondary, destructive, outline, ghost, link)
+    - **输入框**: ShadInput, ShadInputFormField (支持表单验证)
+    - **卡片**: ShadCard (title, description, footer, child)
+    - **对话框**: ShadDialog (alert, confirm, custom)
+    - **下拉菜单**: ShadContextMenuItem, ShadDropdownButton
+    - **标签页**: ShadTabs (支持多标签切换)
+    - **开关**: ShadSwitch (设置项开关)
+    - **滑块**: ShadSlider (进度条、音量调节)
+    - **进度条**: ShadProgress
+    - **表格**: ShadTable
+    - **表单**: ShadForm, ShadInputFormField, ShadSelectFormField
+  - [ ] 10.5 实现业务组件 (基于 shadcn_ui 封装)
+    - **视频卡片**: 使用 ShadCard 封装 VideoCard 组件
+    - **播放器控制栏**: 使用 ShadSlider, ShadButton 封装控制组件
+    - **弹幕开关**: 使用 ShadSwitch 封装弹幕控制
+    - **搜索框**: 使用 ShadInput 封装搜索输入框
+    - **导航菜单**: 使用 ShadCard + ShadButton 封装侧边导航
+  - [ ] 10.6 自定义主题适配原应用风格
+    - 自定义颜色方案：扩展 ShadColorScheme
+    - 自定义按钮主题：使用 ShadButtonTheme
+    - 自定义卡片主题：使用 ShadCardTheme
+    - 确保暗色模式完整适配
+  - [ ] 10.7 配置国际化支持
+    - 添加 `flutter_localizations` 依赖
+    - 配置 GlobalShadLocalizations.delegate
+    - 与 Material/Cupertino 本地化协同工作
+  - [ ]* 10.8 为 UI 组件编写 Widget 测试
+    - 测试 shadcn_ui 组件的基本功能
+    - 测试业务组件的渲染正确性
+    - 测试主题切换效果
+    - 测试响应式布局
+
+- [ ] 11. 实现核心页面
+  - [ ] 11.1 实现启动页和免责声明页
+    - 创建 `SplashPage` 显示应用启动动画
+    - 创建 `DisclaimerPage` 显示用户协议
+    - 实现首次启动检测和数据初始化
+  - [x] 11.2 实现首页 (Film)
+    - 创建 `FilmPage` 展示站点列表
+    - 实现分类导航和影视列表 (参考 REQ-002)
+    - 实现搜索入口和搜索结果展示
+  - [ ] 11.3 实现详情页
+    - 创建 `VideoDetailPage` 展示影视信息
+    - 实现播放列表和选集功能
+    - 实现收藏和分享功能
+  - [ ] 11.4 实现播放页
+    - 创建 `PlayerPage` 集成播放器组件
+    - 实现横屏全屏播放
+    - 实现后台播放和 PIP 模式
+  - [ ] 11.5 实现直播页
+    - 创建 `LivePage` 展示直播源和频道列表
+    - 实现 EPG 节目单显示
+    - 实现频道切换和回看功能 (REQ-003)
+  - [ ] 11.6 实现解析配置页
+    - 创建 `ParsePage` 展示解析接口列表
+    - 实现解析接口的增删改查
+    - 实现默认解析设置
+  - [ ] 11.7 实现历史页
+    - 创建 `HistoryPage` 展示播放历史
+    - 实现历史的续看功能
+    - 实现单条删除和批量清空 (REQ-007)
+  - [ ] 11.8 实现收藏页
+    - 创建 `FavoritePage` 展示收藏内容
+    - 实现收藏的增删操作
+    - 实现分组管理
+  - [x] 11.9 实现搜索页
+    - 创建 `SearchPage` 实现全局搜索
+    - 实现搜索联想 (REQ-008)
+    - 实现搜索历史和建议
+  - [x] 11.10 实现设置页
+    - 创建 `SettingPage` 展示所有配置项
+    - 实现主题、语言、代理、播放器等设置
+    - 实现数据导入导出和云同步 (REQ-010)
+  - [ ] 11.11 实现关于页和 AI 功能页
+    - 创建 `AboutPage` 展示应用信息
+    - 创建 `AiPage` 实现 AI 推荐功能 (REQ-011)
+  - [ ]* 11.12 为页面编写集成测试
+    - 测试页面路由跳转
+    - 测试页面数据加载
+    - 测试页面的用户交互流程
+
+- [ ] 12. 检查点 - 验证核心页面功能
+  - 确保所有页面能正常渲染和交互
+  - 页面间跳转流畅无崩溃
+  - 如有问题请询问用户
+
+- [ ] 13. 实现播放器核心功能
+  - [ ] 13.1 集成播放器内核
+    - 选择并集成 fijkplayer 或 media_kit
+    - 实现播放器的初始化和释放
+    - 实现播放、暂停、停止、seek 等基础功能
+  - [ ] 13.2 实现多格式支持
+    - 支持 HLS (.m3u8), DASH, MP4, FLV 等格式
+    - 实现自动格式检测和对应解码器选择
+  - [ ] 13.3 实现播放控制
+    - 实现倍速调节 (0.5x - 3.0x)
+    - 实现音量和亮度手势控制
+    - 实现进度条拖拽和预览
+  - [ ] 13.4 实现弹幕功能
+    - 实现弹幕的加载和解析
+    - 实现弹幕的实时显示和同步
+    - 实现弹幕的发送功能 (可选)
+  - [ ] 13.5 实现播放优化
+    - 实现硬件加速
+    - 实现预加载和缓冲优化
+    - 实现自动连播和记忆播放 (REQ-006)
+  - [ ] 13.6 实现后台播放
+    - 集成后台音频播放
+    - 实现通知栏播放控制
+    - 实现 PIP 画中画模式
+  - [ ]* 13.7 为播放器编写测试
+    - 测试播放器状态机
+    - 测试各种格式的播放
+    - 测试后台播放和 PIP
+
+- [ ] 14. 实现嗅探服务
+  - [ ] 14.1 集成 WebView
+    - 使用 `webview_flutter` 插件
+    - 实现网页加载和资源监控
+  - [ ] 14.2 实现资源嗅探
+    - 创建 `SnifferService` 类
+    - 实现视频链接的规则匹配
+    - 实现多集链接的批量嗅探 (REQ-015)
+  - [ ] 14.3 实现嗅探规则配置
+    - 支持正则表达式规则
+    - 支持自定义嗅探脚本
+    - 支持第三方嗅探接口
+  - [ ]* 14.4 为嗅探服务编写测试
+    - 测试规则匹配准确性
+    - 测试各种网页的嗅探效果
+
+- [ ] 15. 实现数据同步服务
+  - [ ] 15.1 集成 WebDAV
+    - 使用 `webdav_client` 插件
+    - 实现 WebDAV 连接和认证
+  - [ ] 15.2 实现数据导出
+    - 创建 `SyncService` 类
+    - 实现配置数据的 JSON 序列化
+    - 实现文件上传到 WebDAV
+  - [ ] 15.3 实现数据导入
+    - 实现从 WebDAV 下载配置文件
+    - 实现 JSON 数据验证和解析
+    - 实现数据的合并和冲突处理
+  - [ ] 15.4 实现自动同步
+    - 实现定时同步任务
+    - 实现增量同步 (仅同步变更数据)
+    - 实现 iCloud 同步 (仅 iOS) (DMR-001, DMR-002)
+  - [ ]* 15.5 为同步服务编写测试
+    - 测试导入导出功能
+    - 测试网络异常处理
+
+- [ ] 16. 检查点 - 验证核心功能完整性
+  - 播放器、嗅探、同步功能正常工作
+  - 核心业务流程无崩溃
+  - 如有问题请询问用户
+
+- [ ] 17. 实现移动端适配
+  - [ ] 17.1 实现响应式布局
+    - 创建 `ResponsiveBuilder` 组件
+    - 实现手机/平板不同布局 (参考 design.md 9.1)
+  - [ ] 17.2 适配全面屏和刘海屏
+    - 使用 `SafeArea` 组件
+    - 实现状态栏和导航栏适配
+  - [ ] 17.3 实现触摸手势
+    - 实现播放器手势控制 (亮度、音量、进度)
+    - 实现列表滑动操作
+    - 实现下拉刷新和上拉加载
+  - [ ] 17.4 实现横竖屏切换
+    - 使用 `auto_orientation` 插件
+    - 实现播放页自动横屏
+    - 实现屏幕旋转动画
+  - [ ] 17.5 实现通知栏和后台播放
+    - 使用 `audio_service` 插件
+    - 实现通知栏播放控制
+    - 实现后台音频播放
+  - [ ] 17.6 实现权限管理
+    - 使用 `permission_handler` 插件
+    - 实现存储、网络等权限请求
+    - 实现权限被拒绝时的引导 (REQ-016)
+  - [ ]* 17.7 为移动端适配编写测试
+    - 测试不同屏幕尺寸的显示
+    - 测试横竖屏切换
+    - 测试手势操作
+
+- [ ] 18. 实现国际化
+  - [ ] 18.1 配置 flutter_localizations
+    - 添加多语言支持依赖
+    - 配置支持的语言列表
+  - [ ] 18.2 创建国际化资源文件
+    - 创建 `l10n/` 目录
+    - 实现简体中文 (zh_CN)、繁体中文 (zh_TW)、英文 (en_US) 等 16 种语言
+    - 参考原项目的 locales 目录
+  - [ ] 18.3 实现语言切换
+    - 实现运行时语言切换
+    - 保存语言设置到本地存储
+  - [ ]* 18.4 为国际化编写测试
+    - 测试各语言的翻译完整性
+    - 测试语言切换功能
+
+- [ ] 19. 实现主题系统
+  - [x] 19.1 定义主题配置
+    - 创建亮色和暗色主题
+    - 定义主题颜色、字体、间距等
+  - [x] 19.2 实现主题切换
+    - 实现运行时主题切换
+    - 实现跟随系统主题
+    - 保存主题设置到本地存储
+  - [ ] 19.3 实现组件主题适配
+    - 确保所有组件支持主题切换
+    - 处理图片、图标等资源的主题适配
+  - [ ]* 19.4 为主题系统编写测试
+    - 测试主题切换效果
+    - 测试主题持久化
+
+- [ ] 20. 检查点 - 验证移动端特性
+  - 确保移动端适配完善
+  - 多语言和主题功能正常
+  - 如有问题请询问用户
+
+- [ ] 21. 实现 AI 功能 (可选)
+  - [ ] 21.1 集成 AI SDK
+    - 使用 `dart_openai` 或类似库
+    - 配置 AI 服务器地址和 API Key
+  - [ ] 21.2 实现 AI 推荐
+    - 根据观看历史生成推荐列表
+    - 实现影视简介和评论生成
+  - [ ] 21.3 实现 AI 搜索
+    - 支持自然语言搜索
+    - 实现语义理解和模糊匹配
+  - [ ]* 21.4 为 AI 功能编写测试
+    - 测试 API 调用
+    - 测试推荐效果
+
+- [ ] 22. 性能优化
+  - [ ] 22.1 渲染优化
+    - 使用 const 构造函数
+    - 添加 RepaintBoundary
+    - 优化列表滚动性能
+  - [ ] 22.2 内存优化
+    - 配置图片缓存大小
+    - 实现对象池复用
+    - 避免内存泄漏 (使用 devtools 检测)
+  - [ ] 22.3 网络优化
+    - 实现请求缓存
+    - 实现请求合并和取消
+    - 优化超时和重试策略
+  - [ ] 22.4 启动优化
+    - 实现延迟加载
+    - 优化初始化流程
+    - 目标：冷启动 < 3 秒 (NFR-001)
+  - [ ]* 22.5 编写性能测试
+    - 测试页面渲染帧率 (目标 60fps)
+    - 测试内存占用 (目标 < 200MB)
+    - 测试启动时间
+
+- [ ] 23. 错误处理和日志
+  - [ ] 23.1 实现全局错误捕获
+    - 配置 FlutterError.onError
+    - 实现 Zone 级别的异常捕获
+  - [x] 23.2 实现日志系统
+    - 使用 `logger` 库
+    - 实现分级日志 (debug, info, warning, error)
+    - 实现日志文件存储
+  - [ ] 23.3 实现错误上报 (可选)
+    - 集成 Sentry 或类似服务
+    - 实现错误堆栈上传
+  - [ ]* 23.4 测试错误处理
+    - 测试各种异常场景
+    - 验证错误提示友好性
+
+- [ ] 24. 检查点 - 全面功能测试
+  - 运行所有功能测试
+  - 确保无严重 bug
+  - 性能指标达标
+  - 如有问题请询问用户
+
+- [ ]* 25. 编写端到端测试
+  - [ ]* 25.1 实现关键流程的 E2E 测试
+    - 测试完整的播放流程
+    - 测试搜索和收藏流程
+    - 测试数据同步流程
+  - [ ]* 25.2 编写 Golden Test
+    - 测试关键页面的视觉效果
+    - 防止 UI 回归
+
+- [ ]* 26. 文档编写
+  - [ ]* 26.1 编写 README
+    - 项目介绍和特性
+    - 安装和使用说明
+  - [ ]* 26.2 编写开发文档
+    - 架构说明
+    - 代码规范
+    - 贡献指南
+
+- [ ] 27. 准备发布
+  - [ ] 27.1 Android 发布准备
+    - 配置签名密钥
+    - 优化 APK 体积 (minify, shrink)
+    - 生成 release APK 和 App Bundle
+  - [ ] 27.2 iOS 发布准备
+    - 配置证书和 Profile
+    - 配置 Info.plist (权限、后台模式等)
+    - 提交 App Store Connect
+  - [ ] 27.3 应用图标和启动图
+    - 使用 `flutter_launcher_icons` 生成图标
+    - 使用 `flutter_native_splash` 生成启动图

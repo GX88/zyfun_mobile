@@ -1,0 +1,95 @@
+name: zyfun_mobile
+description: zyfun Flutter Mobile App - 跨平台视频播放器
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.2.0 <4.0.0'
+  flutter: '>=3.16.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  flutter_localizations:
+    sdk: flutter
+
+  # UI 组件库
+  shadcn_ui: ^0.54.0
+  lucide_icons_flutter: ^3.0.0
+
+  # 状态管理
+  flutter_riverpod: ^2.4.0
+  riverpod_annotation: ^2.3.0
+
+  # 路由
+  go_router: ^12.0.0
+
+  # 网络请求
+  dio: ^5.4.0
+
+  # 数据序列化
+  json_annotation: ^4.9.0
+  freezed_annotation: ^2.4.0
+
+  # 本地数据库
+  sqflite: ^2.3.0
+  path: ^1.8.3
+  path_provider: ^2.1.0
+
+  # 本地存储
+  shared_preferences: ^2.2.0
+  flutter_secure_storage: ^9.0.0
+
+  # 播放器
+  fijkplayer: ^0.10.0
+
+  # 权限管理
+  permission_handler: ^11.0.0
+
+  # 通知和后台播放
+  audio_service: ^0.18.0
+  audio_session: ^0.1.0
+
+  # 云同步
+  webdav_client: ^1.2.0
+
+  # 图片加载
+  cached_network_image: ^3.3.0
+
+  # 日志
+  logger: ^2.0.0
+
+  # 工具库
+  collection: ^1.18.0
+  intl: ^0.20.2
+  equatable: ^2.0.0
+  dartz: ^0.10.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^3.0.0
+  
+  # 代码生成
+  build_runner: ^2.4.0
+  riverpod_generator: ^2.3.0
+  json_serializable: ^6.7.0
+  freezed: ^2.4.0
+  sqflite_common_ffi: ^2.3.3
+
+flutter:
+  uses-material-design: true
+  
+  # 配置字体
+  fonts:
+    - family: Inter
+      fonts:
+        - asset: assets/fonts/Inter-Regular.ttf
+        - asset: assets/fonts/Inter-Bold.ttf
+          weight: 700
+
+  # 资源文件
+  assets:
+    - assets/images/
+    - assets/icons/
+    - assets/animations/

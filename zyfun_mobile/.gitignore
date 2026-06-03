@@ -1,0 +1,38 @@
+# Environment
+.env
+*.env
+
+# MacOS
+.DS_Store
+
+# IDEs
+.idea/
+*.iml
+*.swp
+*.swo
+*~
+.vscode/
+
+# Build outputs
+build/
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.packages
+.pub-cache/
+.pub/
+
+# Test coverage
+coverage/
+
+# Generated files
+*.g.dart
+*.freezed.dart
+
+# Logs
+*.log
+
+# Database
+*.db
+*.db-wal
+*.db-shm
