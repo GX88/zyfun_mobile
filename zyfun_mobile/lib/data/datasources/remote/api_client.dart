@@ -10,7 +10,11 @@ class ApiClient {
     String baseUrl = ApiConstants.defaultBaseUrl,
     Map<String, Object?>? headers,
     bool enableLog = true,
-  }) : _dio = dio ?? Dio(_buildOptions(baseUrl: baseUrl, headers: headers)) {
+    int maxRetries = ApiConstants.maxRetries,
+    Duration retryDelay = const Duration(milliseconds: ApiConstants.retryDelay),
+  })  : _dio = dio ?? Dio(_buildOptions(baseUrl: baseUrl, headers: headers)),
+        _maxRetries = maxRetries,
+        _retryDelay = retryDelay {
     _dio.interceptors.addAll(<Interceptor>[
       InterceptorsWrapper(
         onRequest: (options, handler) {
@@ -38,6 +42,8 @@ class ApiClient {
   }
 
   final Dio _dio;
+  final int _maxRetries;
+  final Duration _retryDelay;
 
   Dio get dio => _dio;
 
@@ -66,15 +72,13 @@ class ApiClient {
     Map<String, dynamic>? queryParameters,
     Options? options,
   }) async {
-    try {
-      return await _dio.get<T>(
+    return _requestWithRetry(
+      () => _dio.get<T>(
         path,
         queryParameters: queryParameters,
         options: options,
-      );
-    } on DioException catch (error, stackTrace) {
-      throw _mapDioException(error, stackTrace);
-    }
+      ),
+    );
   }
 
   Future<Response<T>> post<T>(
@@ -83,16 +87,50 @@ class ApiClient {
     Map<String, dynamic>? queryParameters,
     Options? options,
   }) async {
-    try {
-      return await _dio.post<T>(
+    return _requestWithRetry(
+      () => _dio.post<T>(
         path,
         data: data,
         queryParameters: queryParameters,
         options: options,
-      );
-    } on DioException catch (error, stackTrace) {
-      throw _mapDioException(error, stackTrace);
+      ),
+    );
+  }
+
+  Future<Response<T>> _requestWithRetry<T>(
+    Future<Response<T>> Function() request,
+  ) async {
+    DioException? lastError;
+    StackTrace? lastStackTrace;
+
+    for (var attempt = 0; attempt <= _maxRetries; attempt++) {
+      try {
+        return await request();
+      } on DioException catch (error, stackTrace) {
+        lastError = error;
+        lastStackTrace = stackTrace;
+
+        if (attempt >= _maxRetries || !_shouldRetry(error)) {
+          throw _mapDioException(error, stackTrace);
+        }
+
+        await Future<void>.delayed(_retryDelay);
+      }
     }
+
+    throw _mapDioException(lastError!, lastStackTrace ?? StackTrace.current);
+  }
+
+  bool _shouldRetry(DioException error) {
+    return switch (error.type) {
+      DioExceptionType.connectionTimeout ||
+      DioExceptionType.sendTimeout ||
+      DioExceptionType.receiveTimeout ||
+      DioExceptionType.connectionError => true,
+      DioExceptionType.badResponse =>
+        (error.response?.statusCode ?? 0) >= 500,
+      _ => false,
+    };
   }
 
   AppException _mapDioException(DioException error, StackTrace stackTrace) {

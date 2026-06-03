@@ -130,5 +130,44 @@ void main() {
         ),
       );
     });
+
+    test('网络异常会按配置自动重试', () async {
+      var attempts = 0;
+      final dio = Dio(BaseOptions(baseUrl: 'https://example.com'))
+        ..interceptors.add(
+          InterceptorsWrapper(
+            onRequest: (options, handler) {
+              attempts += 1;
+              if (attempts < 3) {
+                handler.reject(
+                  DioException(
+                    requestOptions: options,
+                    type: DioExceptionType.connectionTimeout,
+                  ),
+                );
+                return;
+              }
+
+              handler.resolve(
+                Response<String>(
+                  requestOptions: options,
+                  data: 'ok',
+                  statusCode: 200,
+                ),
+              );
+            },
+          ),
+        );
+      final client = ApiClient(
+        dio: dio,
+        enableLog: false,
+        maxRetries: 2,
+        retryDelay: Duration.zero,
+      );
+
+      final response = await client.get<String>('/retry');
+      expect(response.data, 'ok');
+      expect(attempts, 3);
+    });
   });
 }

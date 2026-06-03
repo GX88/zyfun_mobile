@@ -5,11 +5,34 @@ import 'package:shadcn_ui/shadcn_ui.dart';
 import '../../components/app_bottom_nav_bar.dart';
 import '../../providers/setting_provider.dart';
 
-class SettingPage extends ConsumerWidget {
+class SettingPage extends ConsumerStatefulWidget {
   const SettingPage({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<SettingPage> createState() => _SettingPageState();
+}
+
+class _SettingPageState extends ConsumerState<SettingPage> {
+  static const String _defaultImportPath =
+      '/workspace/.monkeycode-tmp-files/05f39be6-config-1.json';
+
+  late final TextEditingController _pathController;
+  bool _isImporting = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _pathController = TextEditingController(text: _defaultImportPath);
+  }
+
+  @override
+  void dispose() {
+    _pathController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final setting = ref.watch(settingNotifierProvider);
     final notifier = ref.read(settingNotifierProvider.notifier);
     final theme = ShadTheme.of(context);
@@ -85,10 +108,76 @@ class SettingPage extends ConsumerWidget {
               ),
             ),
           ),
+          const SizedBox(height: 16),
+          ShadCard(
+            title: Text('导入配置', style: theme.textTheme.h4),
+            description: const Text('导入桌面版 JSON 配置，当前优先接入可用的 T1_JSON 站点。'),
+            child: Padding(
+              padding: const EdgeInsets.only(top: 16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: <Widget>[
+                  ShadInput(
+                    controller: _pathController,
+                    placeholder: const Text('输入工作区中的 JSON 文件路径'),
+                  ),
+                  const SizedBox(height: 12),
+                  Text(
+                    '默认已指向当前上传的配置文件，可直接导入。',
+                    style: theme.textTheme.small,
+                  ),
+                  const SizedBox(height: 12),
+                  SizedBox(
+                    width: double.infinity,
+                    child: ShadButton(
+                      onPressed: _isImporting ? null : () => _importConfig(context),
+                      child: Text(_isImporting ? '导入中...' : '导入工作区配置'),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
         ],
       ),
       bottomNavigationBar: const AppBottomNavBar(selectedIndex: 3),
     );
+  }
+
+  Future<void> _importConfig(BuildContext context) async {
+    final messenger = ScaffoldMessenger.of(context);
+    setState(() {
+      _isImporting = true;
+    });
+
+    try {
+      final result = await ref
+          .read(settingNotifierProvider.notifier)
+          .importDesktopConfigFile(_pathController.text.trim());
+      if (!mounted) {
+        return;
+      }
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text(
+            '导入完成：站点 ${result.sitesImported}，直播源 ${result.iptvsImported}，解析 ${result.analyzesImported}，跳过 ${result.skippedSites}',
+          ),
+        ),
+      );
+    } catch (error) {
+      if (!mounted) {
+        return;
+      }
+      messenger.showSnackBar(
+        SnackBar(content: Text('导入失败：$error')),
+      );
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isImporting = false;
+        });
+      }
+    }
   }
 }
 

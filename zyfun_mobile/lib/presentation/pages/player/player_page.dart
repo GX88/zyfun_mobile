@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shadcn_ui/shadcn_ui.dart';
 import 'package:video_player/video_player.dart';
 
-class PlayerPage extends StatefulWidget {
+import '../../providers/player_provider.dart';
+
+class PlayerPage extends ConsumerStatefulWidget {
   const PlayerPage({
     super.key,
     required this.id,
@@ -17,65 +20,32 @@ class PlayerPage extends StatefulWidget {
   final String? episode;
 
   @override
-  State<PlayerPage> createState() => _PlayerPageState();
+  ConsumerState<PlayerPage> createState() => _PlayerPageState();
 }
 
-class _PlayerPageState extends State<PlayerPage> {
-  VideoPlayerController? _controller;
-  String? _errorMessage;
-  bool _isInitializing = true;
+class _PlayerPageState extends ConsumerState<PlayerPage> {
+  late final PlayerSource _source;
 
   @override
   void initState() {
     super.initState();
-    _initializePlayer();
-  }
-
-  Future<void> _initializePlayer() async {
-    final uri = Uri.tryParse(widget.playUrl);
-    if (uri == null || !uri.hasScheme || uri.host.isEmpty) {
-      setState(() {
-        _errorMessage = '播放地址无效';
-        _isInitializing = false;
-      });
-      return;
-    }
-
-    final controller = VideoPlayerController.networkUrl(uri);
-
-    try {
-      await controller.initialize();
-      await controller.play();
-      if (!mounted) {
-        await controller.dispose();
-        return;
-      }
-      setState(() {
-        _controller = controller;
-        _isInitializing = false;
-      });
-    } catch (_) {
-      await controller.dispose();
-      if (!mounted) {
-        return;
-      }
-      setState(() {
-        _errorMessage = '播放器初始化失败';
-        _isInitializing = false;
-      });
-    }
-  }
-
-  @override
-  void dispose() {
-    _controller?.dispose();
-    super.dispose();
+    _source = PlayerSource(
+      id: widget.id,
+      title: widget.title,
+      playUrl: widget.playUrl,
+      episode: widget.episode,
+    );
+    Future<void>.microtask(
+      () => ref.read(playerNotifierProvider(_source).notifier).initialize(_source),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     final theme = ShadTheme.of(context);
-    final controller = _controller;
+    final state = ref.watch(playerNotifierProvider(_source));
+    final notifier = ref.read(playerNotifierProvider(_source).notifier);
+    final controller = notifier.videoController;
 
     return Scaffold(
       appBar: AppBar(
@@ -89,7 +59,7 @@ class _PlayerPageState extends State<PlayerPage> {
             description: Text(widget.episode ?? '视频播放'),
             child: Padding(
               padding: const EdgeInsets.only(top: 16),
-              child: _buildPlayerBody(theme, controller),
+              child: _buildPlayerBody(theme, state, controller, notifier),
             ),
           ),
           const SizedBox(height: 16),
@@ -113,20 +83,25 @@ class _PlayerPageState extends State<PlayerPage> {
     );
   }
 
-  Widget _buildPlayerBody(ShadThemeData theme, VideoPlayerController? controller) {
-    if (_isInitializing) {
+  Widget _buildPlayerBody(
+    ShadThemeData theme,
+    PlayerState state,
+    VideoPlayerController? controller,
+    PlayerNotifier notifier,
+  ) {
+    if (state.isInitializing) {
       return const AspectRatio(
         aspectRatio: 16 / 9,
         child: Center(child: CircularProgressIndicator()),
       );
     }
 
-    if (_errorMessage != null || controller == null || !controller.value.isInitialized) {
+    if (state.errorMessage != null || controller == null || !controller.value.isInitialized) {
       return AspectRatio(
         aspectRatio: 16 / 9,
         child: Center(
           child: Text(
-            _errorMessage ?? '播放器未就绪',
+            state.errorMessage ?? '播放器未就绪',
             style: theme.textTheme.muted,
           ),
         ),
@@ -136,29 +111,33 @@ class _PlayerPageState extends State<PlayerPage> {
     return Column(
       children: <Widget>[
         AspectRatio(
-          aspectRatio: controller.value.aspectRatio == 0
-              ? 16 / 9
-              : controller.value.aspectRatio,
+          aspectRatio: state.aspectRatio,
           child: ClipRRect(
             borderRadius: BorderRadius.circular(12),
             child: VideoPlayer(controller),
           ),
         ),
         const SizedBox(height: 12),
+        if (state.isBuffering)
+          Padding(
+            padding: const EdgeInsets.only(bottom: 12),
+            child: Row(
+              children: <Widget>[
+                const SizedBox(
+                  width: 16,
+                  height: 16,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                ),
+                const SizedBox(width: 8),
+                Text('缓冲中...', style: theme.textTheme.small),
+              ],
+            ),
+          ),
         Row(
           children: <Widget>[
             ShadButton(
-              onPressed: () async {
-                if (controller.value.isPlaying) {
-                  await controller.pause();
-                } else {
-                  await controller.play();
-                }
-                if (mounted) {
-                  setState(() {});
-                }
-              },
-              child: Text(controller.value.isPlaying ? '暂停' : '播放'),
+              onPressed: () => notifier.togglePlayPause(),
+              child: Text(state.isPlaying ? '暂停' : state.isCompleted ? '重播' : '播放'),
             ),
             const SizedBox(width: 12),
             Expanded(
@@ -170,7 +149,59 @@ class _PlayerPageState extends State<PlayerPage> {
             ),
           ],
         ),
+        const SizedBox(height: 12),
+        Row(
+          children: <Widget>[
+            Expanded(
+              child: Text(
+                '${_formatDuration(state.position)} / ${_formatDuration(state.duration)}',
+                style: theme.textTheme.small,
+              ),
+            ),
+            SizedBox(
+              width: 96,
+              child: ShadSelect<double>(
+                minWidth: 96,
+                initialValue: state.playbackSpeed,
+                selectedOptionBuilder: (context, value) => Text('${value}x'),
+                options: const <ShadOption<double>>[
+                  ShadOption(value: 0.75, child: Text('0.75x')),
+                  ShadOption(value: 1, child: Text('1.0x')),
+                  ShadOption(value: 1.25, child: Text('1.25x')),
+                  ShadOption(value: 1.5, child: Text('1.5x')),
+                ],
+                onChanged: (value) {
+                  if (value != null) {
+                    notifier.setPlaybackSpeed(value);
+                  }
+                },
+                placeholder: const Text('倍速'),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
+        Align(
+          alignment: Alignment.centerLeft,
+          child: Text('音量 ${state.volume.toStringAsFixed(2)}', style: theme.textTheme.small),
+        ),
+        ShadSlider(
+          min: 0,
+          max: 1,
+          initialValue: state.volume,
+          onChanged: (value) => notifier.setVolume(value),
+        ),
       ],
     );
+  }
+
+  String _formatDuration(Duration duration) {
+    final hours = duration.inHours;
+    final minutes = duration.inMinutes.remainder(60).toString().padLeft(2, '0');
+    final seconds = duration.inSeconds.remainder(60).toString().padLeft(2, '0');
+    if (hours > 0) {
+      return '$hours:$minutes:$seconds';
+    }
+    return '$minutes:$seconds';
   }
 }

@@ -12,6 +12,7 @@ import '../../data/repositories/history_repository_impl.dart';
 import '../../data/repositories/iptv_repository_impl.dart';
 import '../../data/repositories/setting_repository_impl.dart';
 import '../../data/repositories/site_repository_impl.dart';
+import '../../data/services/config_import_service.dart';
 import '../../domain/repositories/analyze_repository.dart';
 import '../../domain/repositories/history_repository.dart';
 import '../../domain/repositories/iptv_repository.dart';
@@ -93,4 +94,13 @@ final analyzeRepositoryProvider = Provider<AnalyzeRepository>((ref) {
 
 final settingRepositoryProvider = Provider<SettingRepository>((ref) {
   return SettingRepositoryImpl(settingDao: ref.watch(settingDaoProvider));
+});
+
+final configImportServiceProvider = Provider<ConfigImportService>((ref) {
+  return ConfigImportService(
+    siteRepository: ref.watch(siteRepositoryProvider),
+    iptvRepository: ref.watch(iptvRepositoryProvider),
+    analyzeRepository: ref.watch(analyzeRepositoryProvider),
+    settingRepository: ref.watch(settingRepositoryProvider),
+  );
 });
