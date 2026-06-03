@@ -1,4 +1,5 @@
 export 'analyze_dao.dart';
+export 'favorite_dao.dart';
 export 'history_dao.dart';
 export 'iptv_dao.dart';
 export 'setting_dao.dart';

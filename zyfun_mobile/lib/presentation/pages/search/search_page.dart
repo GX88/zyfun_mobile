@@ -1,9 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 import 'package:shadcn_ui/shadcn_ui.dart';
 
-import '../../../data/models/video.dart';
+import '../../components/app_bottom_nav_bar.dart';
 import '../../providers/site_provider.dart';
 
 class SearchPage extends ConsumerStatefulWidget {
@@ -53,30 +52,15 @@ class _SearchPageState extends ConsumerState<SearchPage> {
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: <Widget>[
-          ShadInput(
+          AppSearchBar(
             controller: _controller,
-            placeholder: const Text('输入影片名、演员或关键词'),
-            leading: const Icon(LucideIcons.search),
-            trailing: state.isSearching
-                ? const Padding(
-                    padding: EdgeInsets.all(8),
-                    child: SizedBox(
-                      width: 16,
-                      height: 16,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    ),
-                  )
-                : null,
-            onSubmitted: (value) => notifier.search(value),
-          ),
-          const SizedBox(height: 12),
-          ShadButton(
-            onPressed: state.selectedSite == null
-                ? null
-                : () => notifier.search(_controller.text),
-            child: Text(
-              state.selectedSite == null ? '请先选择站点' : '搜索 ${state.selectedSite!.name}',
-            ),
+            isSearching: state.isSearching,
+            onSubmitted: notifier.search,
+            onSearch: () => notifier.search(_controller.text),
+            buttonEnabled: state.selectedSite != null,
+            buttonLabel: state.selectedSite == null
+                ? '请先选择站点'
+                : '搜索 ${state.selectedSite!.name}',
           ),
           const SizedBox(height: 16),
           if (state.searchKeyword.isNotEmpty)
@@ -94,35 +78,12 @@ class _SearchPageState extends ConsumerState<SearchPage> {
             ...state.searchResults.map(
               (video) => Padding(
                 padding: const EdgeInsets.only(bottom: 12),
-                child: _SearchResultTile(video: video),
+                child: VideoCard(
+                  video: video,
+                  showPlayButton: false,
+                ),
               ),
             ),
-        ],
-      ),
-    );
-  }
-}
-
-class _SearchResultTile extends StatelessWidget {
-  const _SearchResultTile({required this.video});
-
-  final Video video;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = ShadTheme.of(context);
-
-    return ShadCard(
-      title: Text(video.title, style: theme.textTheme.large),
-      description: Text(video.description ?? '暂无简介', style: theme.textTheme.muted),
-      footer: Row(
-        children: <Widget>[
-          Text(video.type ?? '未分类', style: theme.textTheme.small),
-          const Spacer(),
-          ShadButton.outline(
-            onPressed: () => context.push('/detail/${video.id}'),
-            child: const Text('查看详情'),
-          ),
         ],
       ),
     );

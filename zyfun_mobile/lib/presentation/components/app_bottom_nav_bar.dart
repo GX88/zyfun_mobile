@@ -2,6 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:shadcn_ui/shadcn_ui.dart';
 
+export 'danmaku_switch.dart';
+export 'navigation_menu_card.dart';
+export 'player_control_bar.dart';
+export 'search_bar.dart';
+export 'video_card.dart';
+
 class AppBottomNavBar extends StatelessWidget {
   const AppBottomNavBar({super.key, required this.selectedIndex});
 

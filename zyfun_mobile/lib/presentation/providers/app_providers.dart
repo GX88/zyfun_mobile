@@ -8,12 +8,14 @@ import '../../data/datasources/remote/iptv_api.dart';
 import '../../data/datasources/remote/parse_api.dart';
 import '../../data/datasources/remote/site_api.dart';
 import '../../data/repositories/analyze_repository_impl.dart';
+import '../../data/repositories/favorite_repository_impl.dart';
 import '../../data/repositories/history_repository_impl.dart';
 import '../../data/repositories/iptv_repository_impl.dart';
 import '../../data/repositories/setting_repository_impl.dart';
 import '../../data/repositories/site_repository_impl.dart';
 import '../../data/services/config_import_service.dart';
 import '../../domain/repositories/analyze_repository.dart';
+import '../../domain/repositories/favorite_repository.dart';
 import '../../domain/repositories/history_repository.dart';
 import '../../domain/repositories/iptv_repository.dart';
 import '../../domain/repositories/setting_repository.dart';
@@ -51,6 +53,10 @@ final historyDaoProvider = Provider<HistoryDao>((ref) {
   return HistoryDao(database: ref.watch(appDatabaseProvider));
 });
 
+final favoriteDaoProvider = Provider<FavoriteDao>((ref) {
+  return FavoriteDao(database: ref.watch(appDatabaseProvider));
+});
+
 final iptvDaoProvider = Provider<IptvDao>((ref) {
   return IptvDao(database: ref.watch(appDatabaseProvider));
 });
@@ -75,6 +81,10 @@ final siteRepositoryProvider = Provider<SiteRepository>((ref) {
 
 final historyRepositoryProvider = Provider<HistoryRepository>((ref) {
   return HistoryRepositoryImpl(historyDao: ref.watch(historyDaoProvider));
+});
+
+final favoriteRepositoryProvider = Provider<FavoriteRepository>((ref) {
+  return FavoriteRepositoryImpl(favoriteDao: ref.watch(favoriteDaoProvider));
 });
 
 final iptvRepositoryProvider = Provider<IptvRepository>((ref) {

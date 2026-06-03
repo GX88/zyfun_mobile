@@ -71,12 +71,14 @@ class ApiClient {
     String path, {
     Map<String, dynamic>? queryParameters,
     Options? options,
+    CancelToken? cancelToken,
   }) async {
     return _requestWithRetry(
       () => _dio.get<T>(
         path,
         queryParameters: queryParameters,
         options: options,
+        cancelToken: cancelToken,
       ),
     );
   }
@@ -86,6 +88,7 @@ class ApiClient {
     Object? data,
     Map<String, dynamic>? queryParameters,
     Options? options,
+    CancelToken? cancelToken,
   }) async {
     return _requestWithRetry(
       () => _dio.post<T>(
@@ -93,6 +96,7 @@ class ApiClient {
         data: data,
         queryParameters: queryParameters,
         options: options,
+        cancelToken: cancelToken,
       ),
     );
   }

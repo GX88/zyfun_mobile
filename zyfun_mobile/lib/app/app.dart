@@ -40,6 +40,7 @@ class _ZyfunAppState extends ConsumerState<ZyfunApp> {
       darkTheme: AppTheme.darkTheme,
       routerConfig: router,
       localizationsDelegates: const [
+        GlobalShadLocalizations.delegate,
         GlobalMaterialLocalizations.delegate,
         GlobalCupertinoLocalizations.delegate,
         GlobalWidgetsLocalizations.delegate,

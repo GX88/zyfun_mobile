@@ -4,7 +4,6 @@ import 'package:go_router/go_router.dart';
 import 'package:shadcn_ui/shadcn_ui.dart';
 
 import '../../../data/models/site.dart';
-import '../../../data/models/video.dart';
 import '../../components/app_bottom_nav_bar.dart';
 import '../../providers/site_provider.dart';
 
@@ -139,7 +138,7 @@ class _FilmPageState extends ConsumerState<FilmPage> {
                                 .map(
                                   (video) => Padding(
                                     padding: const EdgeInsets.only(bottom: 12),
-                                    child: _VideoCard(video: video),
+                                    child: VideoCard(video: video),
                                   ),
                                 )
                                 .toList(),
@@ -159,7 +158,7 @@ class _FilmPageState extends ConsumerState<FilmPage> {
                         .map(
                           (video) => Padding(
                             padding: const EdgeInsets.only(bottom: 12),
-                            child: _VideoCard(video: video),
+                            child: VideoCard(video: video),
                           ),
                         )
                         .toList(),
@@ -241,59 +240,5 @@ class _CategoryChip extends StatelessWidget {
       return ShadButton(onPressed: onPressed, child: Text(label));
     }
     return ShadButton.outline(onPressed: onPressed, child: Text(label));
-  }
-}
-
-class _VideoCard extends StatelessWidget {
-  const _VideoCard({required this.video});
-
-  final Video video;
-
-  static const String _demoPlayableUrl =
-      'https://flutter.github.io/assets-for-api-docs/assets/videos/bee.mp4';
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = ShadTheme.of(context);
-
-    return ShadCard(
-      title: Text(video.title, style: theme.textTheme.large),
-      description: Text(video.description ?? '暂无简介', style: theme.textTheme.muted),
-      footer: Row(
-        children: <Widget>[
-          Text(video.type ?? '未分类', style: theme.textTheme.small),
-          const Spacer(),
-          ShadButton(
-            onPressed: () {
-              final candidateUrl = video.playUrls.isNotEmpty
-                  ? (video.playUrls.first['url'] ?? '')
-                  : '';
-              final resolvedUrl = candidateUrl.contains('example.com') ||
-                      candidateUrl.isEmpty
-                  ? _demoPlayableUrl
-                  : candidateUrl;
-              final episodeName = video.playUrls.isNotEmpty
-                  ? video.playUrls.first['name']
-                  : '演示播放';
-              final uri = Uri(
-                path: '/player/${video.id}',
-                queryParameters: <String, String>{
-                  'title': video.title,
-                  'url': resolvedUrl,
-                  'episode': episodeName ?? '演示播放',
-                },
-              );
-              context.push(uri.toString());
-            },
-            child: const Text('播放'),
-          ),
-          const SizedBox(width: 8),
-          ShadButton.outline(
-            onPressed: () => context.push('/detail/${video.id}'),
-            child: const Text('详情'),
-          ),
-        ],
-      ),
-    );
   }
 }

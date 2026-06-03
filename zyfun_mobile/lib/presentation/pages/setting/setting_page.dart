@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:shadcn_ui/shadcn_ui.dart';
 
 import '../../../data/services/config_import_service.dart';
@@ -99,7 +100,7 @@ class _SettingPageState extends ConsumerState<SettingPage> {
           const SizedBox(height: 16),
           ShadCard(
             title: Text('配置摘要', style: theme.textTheme.h4),
-            description: const Text('当前仅展示关键配置，后续补齐完整设置项。'),
+            description: const Text('当前展示关键配置，并提供统一组件展示入口。'),
             child: Padding(
               padding: const EdgeInsets.only(top: 16),
               child: Column(
@@ -110,6 +111,14 @@ class _SettingPageState extends ConsumerState<SettingPage> {
                   Text('超时：${setting.timeout} ms'),
                   const SizedBox(height: 8),
                   Text('默认热搜：${setting.hot}'),
+                  const SizedBox(height: 16),
+                  SizedBox(
+                    width: double.infinity,
+                    child: ShadButton.outline(
+                      onPressed: () => context.push('/shadcn'),
+                      child: const Text('查看 shadcn 组件库'),
+                    ),
+                  ),
                 ],
               ),
             ),
@@ -153,17 +162,17 @@ class _SettingPageState extends ConsumerState<SettingPage> {
                     Container(
                       width: double.infinity,
                       padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: _importSucceeded
-                            ? theme.colorScheme.primary.withOpacity(0.08)
-                            : theme.colorScheme.destructive.withOpacity(0.08),
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(
+                        decoration: BoxDecoration(
                           color: _importSucceeded
-                              ? theme.colorScheme.primary.withOpacity(0.3)
-                              : theme.colorScheme.destructive.withOpacity(0.3),
+                              ? theme.colorScheme.primary.withValues(alpha: 0.08)
+                              : theme.colorScheme.destructive.withValues(alpha: 0.08),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                            color: _importSucceeded
+                                ? theme.colorScheme.primary.withValues(alpha: 0.3)
+                                : theme.colorScheme.destructive.withValues(alpha: 0.3),
+                          ),
                         ),
-                      ),
                       child: Text(
                         _importSummary!,
                         style: theme.textTheme.small.copyWith(

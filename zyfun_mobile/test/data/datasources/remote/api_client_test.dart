@@ -131,6 +131,21 @@ void main() {
       );
     });
 
+    test('取消请求会映射为 AppException.network', () async {
+      final dio = Dio(BaseOptions(baseUrl: 'https://example.com'));
+      final client = ApiClient(dio: dio, enableLog: false);
+      final cancelToken = CancelToken()..cancel('cancelled by test');
+
+      await expectLater(
+        () => client.get<Object>('/cancelled', cancelToken: cancelToken),
+        throwsA(
+          isA<AppException>()
+              .having((error) => error.type, 'type', AppErrorType.network)
+              .having((error) => error.message, 'message', '请求已取消'),
+        ),
+      );
+    });
+
     test('网络异常会按配置自动重试', () async {
       var attempts = 0;
       final dio = Dio(BaseOptions(baseUrl: 'https://example.com'))

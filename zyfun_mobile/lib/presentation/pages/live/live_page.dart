@@ -44,6 +44,28 @@ class _LivePageState extends ConsumerState<LivePage> {
         child: ListView(
           padding: const EdgeInsets.all(16),
           children: <Widget>[
+            const NavigationMenuCard(
+              title: '快捷入口',
+              description: '在直播能力补齐前，先提供常用页面跳转。',
+              items: <NavigationMenuItem>[
+                NavigationMenuItem(
+                  label: '影视首页',
+                  route: '/film',
+                  icon: LucideIcons.clapperboard,
+                ),
+                NavigationMenuItem(
+                  label: '解析配置',
+                  route: '/parse',
+                  icon: LucideIcons.sparkles,
+                ),
+                NavigationMenuItem(
+                  label: '应用设置',
+                  route: '/setting',
+                  icon: LucideIcons.settings2,
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
             ShadCard(
               title: Text('直播源', style: theme.textTheme.h4),
               description: const Text('当前接入 M3U 频道列表与默认直播源选择。'),

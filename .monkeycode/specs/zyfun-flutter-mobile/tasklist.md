@@ -108,7 +108,7 @@
   - 确保所有仓库的 CRUD 操作正常工作
   - 如有问题请询问用户
 
-- [ ] 7. 实现 API 客户端
+- [x] 7. 实现 API 客户端
   - [x] 7.1 配置 Dio HTTP 客户端
     - 创建 `ApiClient` 类，配置 Dio 实例
     - 设置基础 URL、超时时间、请求头
@@ -129,7 +129,7 @@
     - 定义 `AppException` 和 `AppErrorType` (参考 design.md 7.1)
     - 实现全局错误拦截和转换
     - 实现自动重试机制 (最多 3 次)
-  - [ ]* 7.6 为 API 客户端编写单元测试
+  - [x]* 7.6 为 API 客户端编写单元测试
     - 使用 mock 测试网络请求
     - 测试错误处理和重试逻辑
     - 测试超时和取消请求
@@ -179,7 +179,7 @@
     - 添加依赖：`flutter pub add lucide_icons_flutter`
     - 导入图标：`import 'package:lucide_icons_flutter/lucide_icons_flutter.dart';`
     - 使用示例：`Icon(LucideIcons.mail)`
-  - [ ] 10.4 使用 shadcn_ui 核心组件
+  - [x] 10.4 使用 shadcn_ui 核心组件
     - **按钮**: ShadButton (primary, secondary, destructive, outline, ghost, link)
     - **输入框**: ShadInput, ShadInputFormField (支持表单验证)
     - **卡片**: ShadCard (title, description, footer, child)
@@ -191,29 +191,29 @@
     - **进度条**: ShadProgress
     - **表格**: ShadTable
     - **表单**: ShadForm, ShadInputFormField, ShadSelectFormField
-  - [ ] 10.5 实现业务组件 (基于 shadcn_ui 封装)
+  - [x] 10.5 实现业务组件 (基于 shadcn_ui 封装)
     - **视频卡片**: 使用 ShadCard 封装 VideoCard 组件
     - **播放器控制栏**: 使用 ShadSlider, ShadButton 封装控制组件
     - **弹幕开关**: 使用 ShadSwitch 封装弹幕控制
     - **搜索框**: 使用 ShadInput 封装搜索输入框
     - **导航菜单**: 使用 ShadCard + ShadButton 封装侧边导航
-  - [ ] 10.6 自定义主题适配原应用风格
+  - [x] 10.6 自定义主题适配原应用风格
     - 自定义颜色方案：扩展 ShadColorScheme
     - 自定义按钮主题：使用 ShadButtonTheme
     - 自定义卡片主题：使用 ShadCardTheme
     - 确保暗色模式完整适配
-  - [ ] 10.7 配置国际化支持
+  - [x] 10.7 配置国际化支持
     - 添加 `flutter_localizations` 依赖
     - 配置 GlobalShadLocalizations.delegate
     - 与 Material/Cupertino 本地化协同工作
-  - [ ]* 10.8 为 UI 组件编写 Widget 测试
+  - [x] 10.8 为 UI 组件编写 Widget 测试
     - 测试 shadcn_ui 组件的基本功能
     - 测试业务组件的渲染正确性
     - 测试主题切换效果
     - 测试响应式布局
 
 - [ ] 11. 实现核心页面
-  - [ ] 11.1 实现启动页和免责声明页
+  - [x] 11.1 实现启动页和免责声明页
     - 创建 `SplashPage` 显示应用启动动画
     - 创建 `DisclaimerPage` 显示用户协议
     - 实现首次启动检测和数据初始化
@@ -221,7 +221,7 @@
     - 创建 `FilmPage` 展示站点列表
     - 实现分类导航和影视列表 (参考 REQ-002)
     - 实现搜索入口和搜索结果展示
-  - [ ] 11.3 实现详情页
+  - [x] 11.3 实现详情页
     - 创建 `VideoDetailPage` 展示影视信息
     - 实现播放列表和选集功能
     - 实现收藏和分享功能

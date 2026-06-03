@@ -51,10 +51,22 @@ class StorageKeys {
   
   /// 语言
   static const String language = 'language';
+
+  /// 是否已接受免责声明
+  static const String disclaimerAccepted = 'disclaimer_accepted';
+
+  /// 是否已完成首次启动初始化
+  static const String appInitialized = 'app_initialized';
 }
 
 /// 路由相关常量
 class RouteConstants {
+  /// 启动页
+  static const String splash = '/splash';
+
+  /// 免责声明页
+  static const String disclaimer = '/disclaimer';
+
   /// 首页
   static const String home = '/';
   

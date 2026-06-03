@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shadcn_ui/shadcn_ui.dart';
 import 'package:video_player/video_player.dart';
 
+import '../../components/app_bottom_nav_bar.dart';
 import '../../providers/player_provider.dart';
 
 class PlayerPage extends ConsumerStatefulWidget {
@@ -25,6 +26,7 @@ class PlayerPage extends ConsumerStatefulWidget {
 
 class _PlayerPageState extends ConsumerState<PlayerPage> {
   late final PlayerSource _source;
+  bool _danmakuEnabled = false;
 
   @override
   void initState() {
@@ -118,26 +120,11 @@ class _PlayerPageState extends ConsumerState<PlayerPage> {
           ),
         ),
         const SizedBox(height: 12),
-        if (state.isBuffering)
-          Padding(
-            padding: const EdgeInsets.only(bottom: 12),
-            child: Row(
-              children: <Widget>[
-                const SizedBox(
-                  width: 16,
-                  height: 16,
-                  child: CircularProgressIndicator(strokeWidth: 2),
-                ),
-                const SizedBox(width: 8),
-                Text('缓冲中...', style: theme.textTheme.small),
-              ],
-            ),
-          ),
         Row(
           children: <Widget>[
-            ShadButton(
-              onPressed: () => notifier.togglePlayPause(),
-              child: Text(state.isPlaying ? '暂停' : state.isCompleted ? '重播' : '播放'),
+            ShadButton.outline(
+              onPressed: () => Navigator.of(context).maybePop(),
+              child: const Text('返回'),
             ),
             const SizedBox(width: 12),
             Expanded(
@@ -150,46 +137,22 @@ class _PlayerPageState extends ConsumerState<PlayerPage> {
           ],
         ),
         const SizedBox(height: 12),
-        Row(
-          children: <Widget>[
-            Expanded(
-              child: Text(
-                '${_formatDuration(state.position)} / ${_formatDuration(state.duration)}',
-                style: theme.textTheme.small,
-              ),
-            ),
-            SizedBox(
-              width: 96,
-              child: ShadSelect<double>(
-                minWidth: 96,
-                initialValue: state.playbackSpeed,
-                selectedOptionBuilder: (context, value) => Text('${value}x'),
-                options: const <ShadOption<double>>[
-                  ShadOption(value: 0.75, child: Text('0.75x')),
-                  ShadOption(value: 1, child: Text('1.0x')),
-                  ShadOption(value: 1.25, child: Text('1.25x')),
-                  ShadOption(value: 1.5, child: Text('1.5x')),
-                ],
-                onChanged: (value) {
-                  if (value != null) {
-                    notifier.setPlaybackSpeed(value);
-                  }
-                },
-                placeholder: const Text('倍速'),
-              ),
-            ),
-          ],
+        PlayerControlBar(
+          isPlaying: state.isPlaying,
+          isCompleted: state.isCompleted,
+          isBuffering: state.isBuffering,
+          positionLabel:
+              '${_formatDuration(state.position)} / ${_formatDuration(state.duration)}',
+          volume: state.volume,
+          playbackSpeed: state.playbackSpeed,
+          onTogglePlayPause: notifier.togglePlayPause,
+          onPlaybackSpeedChanged: notifier.setPlaybackSpeed,
+          onVolumeChanged: notifier.setVolume,
         ),
         const SizedBox(height: 12),
-        Align(
-          alignment: Alignment.centerLeft,
-          child: Text('音量 ${state.volume.toStringAsFixed(2)}', style: theme.textTheme.small),
-        ),
-        ShadSlider(
-          min: 0,
-          max: 1,
-          initialValue: state.volume,
-          onChanged: (value) => notifier.setVolume(value),
+        DanmakuSwitch(
+          value: _danmakuEnabled,
+          onChanged: (value) => setState(() => _danmakuEnabled = value),
         ),
       ],
     );

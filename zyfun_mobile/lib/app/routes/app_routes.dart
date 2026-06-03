@@ -2,11 +2,16 @@ import 'package:go_router/go_router.dart';
 import 'package:flutter/material.dart';
 import 'package:shadcn_ui/shadcn_ui.dart';
 
+import '../../core/constants/constants.dart';
+import '../../presentation/pages/detail/video_detail_page.dart';
+import '../../presentation/pages/disclaimer/disclaimer_page.dart';
 import '../../presentation/pages/film/film_page.dart';
 import '../../presentation/pages/history/history_page.dart';
 import '../../presentation/pages/live/live_page.dart';
 import '../../presentation/pages/player/player_page.dart';
 import '../../presentation/pages/search/search_page.dart';
+import '../../presentation/pages/splash/splash_page.dart';
+import '../../presentation/pages/shadcn/shadcn_components_page.dart';
 import '../../presentation/pages/setting/setting_page.dart';
 
 /// 应用路由配置
@@ -24,13 +29,25 @@ import '../../presentation/pages/setting/setting_page.dart';
 /// - /parse (解析配置)
 
 final GoRouter router = GoRouter(
-  initialLocation: '/film',
+  initialLocation: RouteConstants.splash,
   routes: [
+    GoRoute(
+      path: RouteConstants.splash,
+      name: 'splash',
+      builder: (context, state) => const SplashPage(),
+    ),
+
+    GoRoute(
+      path: RouteConstants.disclaimer,
+      name: 'disclaimer',
+      builder: (context, state) => const DisclaimerPage(),
+    ),
+
     // 底部导航主页
     GoRoute(
       path: '/',
       name: 'home',
-      redirect: (context, state) => '/film',
+      redirect: (context, state) => RouteConstants.film,
     ),
     
     // 影视页面
@@ -92,7 +109,13 @@ final GoRouter router = GoRouter(
       name: 'detail',
       builder: (context, state) {
         final id = state.pathParameters['id']!;
-        return PlaceholderPage(title: '详情 - $id');
+        final siteId = state.uri.queryParameters['siteId'] ?? '';
+        final title = state.uri.queryParameters['title'];
+        return VideoDetailPage(
+          siteId: siteId,
+          videoId: id,
+          title: title,
+        );
       },
     ),
     
@@ -108,6 +131,12 @@ final GoRouter router = GoRouter(
       path: '/parse',
       name: 'parse',
       builder: (context, state) => const PlaceholderPage(title: '解析'),
+    ),
+
+    GoRoute(
+      path: '/shadcn',
+      name: 'shadcn',
+      builder: (context, state) => const ShadcnComponentsPage(),
     ),
   ],
 );
@@ -130,7 +159,7 @@ class PlaceholderPage extends StatelessWidget {
       body: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
-          children: [
+          children: <Widget>[
             Icon(
               Icons.construction_outlined,
               size: 64,
