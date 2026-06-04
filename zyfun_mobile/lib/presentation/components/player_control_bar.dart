@@ -78,10 +78,10 @@ class PlayerControlBar extends StatelessWidget {
           ],
         ),
         const SizedBox(height: 12),
-        Text('音量 ${volume.toStringAsFixed(2)}', style: theme.textTheme.small),
+        Text('音量 ${volume.toStringAsFixed(0)}', style: theme.textTheme.small),
         ShadSlider(
           min: 0,
-          max: 1,
+          max: 100,
           initialValue: volume,
           onChanged: onVolumeChanged,
         ),

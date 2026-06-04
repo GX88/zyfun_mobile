@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:media_kit_video/media_kit_video.dart';
 import 'package:zyfun_mobile/presentation/providers/player_provider.dart';
 
 void main() {
@@ -13,10 +14,16 @@ void main() {
 
     test('初始化后进入播放状态并同步基础参数', () async {
       final fakeController = FakePlayerController();
+      Uri? capturedUri;
+      Map<String, String>? capturedHeaders;
       final container = ProviderContainer(
         overrides: <Override>[
           playerControllerFactoryProvider.overrideWithValue(
-            (uri) async => fakeController,
+            (uri, headers) async {
+              capturedUri = uri;
+              capturedHeaders = headers;
+              return fakeController;
+            },
           ),
         ],
       );
@@ -30,7 +37,9 @@ void main() {
       expect(state.isPlaying, isTrue);
       expect(state.duration, const Duration(minutes: 20));
       expect(state.playbackSpeed, 1);
-      expect(state.volume, 1);
+      expect(state.volume, 100);
+      expect(capturedUri.toString(), 'https://example.com/video.mp4');
+      expect(capturedHeaders, isEmpty);
     });
 
     test('切换播放、调节倍速音量和拖动进度会更新状态', () async {
@@ -38,7 +47,7 @@ void main() {
       final container = ProviderContainer(
         overrides: <Override>[
           playerControllerFactoryProvider.overrideWithValue(
-            (uri) async => fakeController,
+            (uri, headers) async => fakeController,
           ),
         ],
       );
@@ -53,8 +62,8 @@ void main() {
       await notifier.setPlaybackSpeed(1.5);
       expect(container.read(playerNotifierProvider(source)).playbackSpeed, 1.5);
 
-      await notifier.setVolume(0.4);
-      expect(container.read(playerNotifierProvider(source)).volume, 0.4);
+      await notifier.setVolume(40);
+      expect(container.read(playerNotifierProvider(source)).volume, 40);
 
       await notifier.seekTo(const Duration(minutes: 5));
       expect(container.read(playerNotifierProvider(source)).position, const Duration(minutes: 5));
@@ -76,6 +85,39 @@ void main() {
       expect(state.isInitializing, isFalse);
       expect(state.errorMessage, '播放地址无效');
     });
+
+    test('初始化时会透传直播流请求头', () async {
+      const sourceWithHeaders = PlayerSource(
+        id: 'live-1',
+        title: '直播测试',
+        playUrl: ' https://example.com/live.m3u8 ',
+        httpHeaders: <String, String>{
+          'User-Agent': 'ZYFun/1.0',
+          'Referer': 'https://example.com',
+        },
+      );
+      final fakeController = FakePlayerController();
+      Uri? capturedUri;
+      Map<String, String>? capturedHeaders;
+      final container = ProviderContainer(
+        overrides: <Override>[
+          playerControllerFactoryProvider.overrideWithValue(
+            (uri, headers) async {
+              capturedUri = uri;
+              capturedHeaders = headers;
+              return fakeController;
+            },
+          ),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      final notifier = container.read(playerNotifierProvider(sourceWithHeaders).notifier);
+      await notifier.initialize(sourceWithHeaders);
+
+      expect(capturedUri.toString(), 'https://example.com/live.m3u8');
+      expect(capturedHeaders, sourceWithHeaders.httpHeaders);
+    });
   });
 }
 
@@ -87,14 +129,17 @@ class FakePlayerController implements PlayerControllerAdapter {
     position: Duration.zero,
     duration: Duration.zero,
     playbackSpeed: 1,
-    volume: 1,
+    volume: 100,
     aspectRatio: 16 / 9,
   );
 
   final List<void Function()> _listeners = <void Function()>[];
 
   @override
-  get videoController => null;
+  VideoController? get videoController => null;
+
+  @override
+  Stream<String> get errorStream => const Stream<String>.empty();
 
   @override
   PlayerControllerValue get value => _value;
@@ -108,7 +153,7 @@ class FakePlayerController implements PlayerControllerAdapter {
       position: Duration.zero,
       duration: Duration(minutes: 20),
       playbackSpeed: 1,
-      volume: 1,
+      volume: 100,
       aspectRatio: 16 / 9,
     );
     _notify();

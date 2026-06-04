@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:shadcn_ui/shadcn_ui.dart';
+import 'dart:convert';
 import 'package:zyfun_mobile/data/models/history.dart';
 import 'package:zyfun_mobile/data/models/iptv.dart';
 import 'package:zyfun_mobile/domain/repositories/history_repository.dart';
@@ -45,12 +46,45 @@ void main() {
     expect(historyRepository.items, hasLength(1));
     expect(historyRepository.items.single.title, 'CCTV-1');
   });
+
+  testWidgets('LivePage 播放频道时会透传请求头到播放器路由', (tester) async {
+    await tester.binding.setSurfaceSize(const Size(1200, 1600));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+
+    final iptvRepository = _FakeIptvRepository();
+    final historyRepository = _FakeHistoryRepository();
+    String? visitedHeaders;
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: <Override>[
+          iptvRepositoryProvider.overrideWithValue(iptvRepository),
+          historyRepositoryProvider.overrideWithValue(historyRepository),
+        ],
+        child: _TestLiveApp(
+          onPlayerRoute: (state) => visitedHeaders = state.uri.queryParameters['headers'],
+          child: const LivePage(),
+        ),
+      ),
+    );
+
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.widgetWithText(ShadButton, '立即播放'));
+    await tester.pumpAndSettle();
+
+    expect(visitedHeaders, isNotNull);
+    final headers = jsonDecode(visitedHeaders!) as Map<String, dynamic>;
+    expect(headers['User-Agent'], 'ZYFun/1.0');
+    expect(headers['Referer'], 'https://example.com');
+  });
 }
 
 class _TestLiveApp extends StatelessWidget {
-  const _TestLiveApp({required this.child});
+  const _TestLiveApp({required this.child, this.onPlayerRoute});
 
   final Widget child;
+  final void Function(GoRouterState state)? onPlayerRoute;
 
   @override
   Widget build(BuildContext context) {
@@ -63,7 +97,10 @@ class _TestLiveApp extends StatelessWidget {
         ),
         GoRoute(
           path: '/player/:id',
-          builder: (context, state) => const Scaffold(body: Text('播放器测试页')),
+          builder: (context, state) {
+            onPlayerRoute?.call(state);
+            return const Scaffold(body: Text('播放器测试页'));
+          },
         ),
         GoRoute(
           path: '/setting',
@@ -125,12 +162,20 @@ class _FakeIptvRepository implements IptvRepository {
         name: 'CCTV-1',
         url: 'https://example.com/cctv1.m3u8',
         group: '央视',
+        headers: <String, String>{
+          'User-Agent': 'ZYFun/1.0',
+          'Referer': 'https://example.com',
+        },
       ),
       Channel(
         id: 'hunan',
         name: '湖南卫视',
         url: 'https://example.com/hunan.m3u8',
         group: '卫视',
+        headers: <String, String>{
+          'User-Agent': 'ZYFun/1.0',
+          'Referer': 'https://example.com',
+        },
       ),
     ];
   }

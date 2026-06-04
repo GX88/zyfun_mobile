@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:media_kit_video/media_kit_video.dart';
 import 'package:shadcn_ui/shadcn_ui.dart';
 import 'package:zyfun_mobile/presentation/pages/player/player_page.dart';
 import 'package:zyfun_mobile/presentation/providers/player_provider.dart';
@@ -16,7 +17,7 @@ void main() {
       ProviderScope(
         overrides: <Override>[
           playerControllerFactoryProvider.overrideWithValue(
-            (uri) async => fakeController,
+            (uri, headers) async => fakeController,
           ),
         ],
         child: const _TestPlayerApp(
@@ -86,7 +87,10 @@ class _FakePlayerController implements PlayerControllerAdapter {
   final List<VoidCallback> _listeners = <VoidCallback>[];
 
   @override
-  get videoController => null;
+  VideoController? get videoController => null;
+
+  @override
+  Stream<String> get errorStream => const Stream<String>.empty();
 
   @override
   PlayerControllerValue get value => _value;

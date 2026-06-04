@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:media_kit_video/media_kit_video.dart';
 import 'package:shadcn_ui/shadcn_ui.dart';
-import 'package:video_player/video_player.dart';
 
 import '../../components/danmaku_switch.dart';
 import '../../components/player_control_bar.dart';
@@ -15,12 +15,14 @@ class PlayerPage extends ConsumerStatefulWidget {
     required this.title,
     required this.playUrl,
     this.episode,
+    this.httpHeaders,
   });
 
   final String id;
   final String title;
   final String playUrl;
   final String? episode;
+  final Map<String, String>? httpHeaders;
 
   @override
   ConsumerState<PlayerPage> createState() => _PlayerPageState();
@@ -41,6 +43,7 @@ class _PlayerPageState extends ConsumerState<PlayerPage> with WidgetsBindingObse
       title: widget.title,
       playUrl: widget.playUrl,
       episode: widget.episode,
+      httpHeaders: widget.httpHeaders,
     );
     Future<void>.microtask(
       () => ref.read(playerNotifierProvider(_source).notifier).initialize(_source),
@@ -111,7 +114,7 @@ class _PlayerPageState extends ConsumerState<PlayerPage> with WidgetsBindingObse
                         children: <Widget>[
                           _InfoLine(label: '显示模式', value: _isFullscreen ? '全屏横屏' : '页面内嵌'),
                           _InfoLine(label: '应用状态', value: _lifecycleLabel),
-                          const _InfoLine(label: '播放器内核', value: 'video_player'),
+                          const _InfoLine(label: '播放器内核', value: 'media_kit'),
                           const _InfoLine(label: '后台播放', value: '待第 13.6 阶段接入 audio_service'),
                           const _InfoLine(label: 'PIP 画中画', value: '待第 13.6 阶段接入原生 PIP'),
                         ],
@@ -121,7 +124,7 @@ class _PlayerPageState extends ConsumerState<PlayerPage> with WidgetsBindingObse
                   const SizedBox(height: 16),
                   ShadCard(
                     title: Text('播放信息', style: theme.textTheme.h4),
-                    description: const Text('当前使用 video_player 作为兼容播放器实现。'),
+                    description: const Text('当前使用 media_kit 作为直播与点播统一播放器实现。'),
                     child: Padding(
                       padding: const EdgeInsets.only(top: 16),
                       child: Column(
@@ -143,7 +146,7 @@ class _PlayerPageState extends ConsumerState<PlayerPage> with WidgetsBindingObse
   Widget _buildPlayerBody(
     ShadThemeData theme,
     PlayerState state,
-    VideoPlayerController? controller,
+    VideoController? controller,
     PlayerNotifier notifier,
   ) {
     if (state.isInitializing) {
@@ -153,7 +156,7 @@ class _PlayerPageState extends ConsumerState<PlayerPage> with WidgetsBindingObse
       );
     }
 
-    if (state.errorMessage != null || controller == null || !controller.value.isInitialized) {
+    if (state.errorMessage != null || controller == null || !state.isReady) {
       return AspectRatio(
         aspectRatio: 16 / 9,
         child: Center(
@@ -173,7 +176,7 @@ class _PlayerPageState extends ConsumerState<PlayerPage> with WidgetsBindingObse
             borderRadius: BorderRadius.circular(_isFullscreen ? 0 : 12),
             child: ColoredBox(
               color: Colors.black,
-              child: VideoPlayer(controller),
+              child: Video(controller: controller),
             ),
           ),
         ),
@@ -188,10 +191,11 @@ class _PlayerPageState extends ConsumerState<PlayerPage> with WidgetsBindingObse
             ),
             const SizedBox(width: 12),
             Expanded(
-              child: VideoProgressIndicator(
-                controller,
-                allowScrubbing: true,
-                padding: const EdgeInsets.symmetric(vertical: 8),
+              child: Slider(
+                value: _progressValue(state),
+                onChanged: (value) => notifier.seekTo(
+                  Duration(milliseconds: (state.duration.inMilliseconds * value).round()),
+                ),
               ),
             ),
           ],
@@ -237,6 +241,15 @@ class _PlayerPageState extends ConsumerState<PlayerPage> with WidgetsBindingObse
       return '$hours:$minutes:$seconds';
     }
     return '$minutes:$seconds';
+  }
+
+  double _progressValue(PlayerState state) {
+    final total = state.duration.inMilliseconds;
+    if (total <= 0) {
+      return 0;
+    }
+    final current = state.position.inMilliseconds.clamp(0, total);
+    return current / total;
   }
 
   String get _lifecycleLabel {

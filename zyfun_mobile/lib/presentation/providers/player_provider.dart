@@ -1,6 +1,9 @@
+import 'dart:async';
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:video_player/video_player.dart';
+import 'package:media_kit/media_kit.dart';
+import 'package:media_kit_video/media_kit_video.dart';
 
 class PlayerSource {
   const PlayerSource({
@@ -8,12 +11,14 @@ class PlayerSource {
     required this.title,
     required this.playUrl,
     this.episode,
+    this.httpHeaders,
   });
 
   final String id;
   final String title;
   final String playUrl;
   final String? episode;
+  final Map<String, String>? httpHeaders;
 
   @override
   bool operator ==(Object other) {
@@ -23,11 +28,20 @@ class PlayerSource {
             id == other.id &&
             title == other.title &&
             playUrl == other.playUrl &&
-            episode == other.episode;
+            episode == other.episode &&
+            mapEquals(httpHeaders, other.httpHeaders);
   }
 
   @override
-  int get hashCode => Object.hash(id, title, playUrl, episode);
+  int get hashCode => Object.hash(
+        id,
+        title,
+        playUrl,
+        episode,
+        Object.hashAll([
+          ...?httpHeaders?.entries.map((entry) => Object.hash(entry.key, entry.value)),
+        ]),
+      );
 }
 
 class PlayerState {
@@ -39,7 +53,7 @@ class PlayerState {
     this.position = Duration.zero,
     this.duration = Duration.zero,
     this.playbackSpeed = 1,
-    this.volume = 1,
+    this.volume = 100,
     this.aspectRatio = 16 / 9,
     this.errorMessage,
   });
@@ -55,7 +69,7 @@ class PlayerState {
   final double aspectRatio;
   final String? errorMessage;
 
-  bool get isReady => errorMessage == null && !isInitializing && duration > Duration.zero;
+  bool get isReady => errorMessage == null && !isInitializing;
 
   PlayerState copyWith({
     bool? isInitializing,
@@ -85,20 +99,6 @@ class PlayerState {
   }
 }
 
-abstract class PlayerControllerAdapter {
-  VideoPlayerController? get videoController;
-  PlayerControllerValue get value;
-  Future<void> initialize();
-  Future<void> play();
-  Future<void> pause();
-  Future<void> seekTo(Duration position);
-  Future<void> setPlaybackSpeed(double speed);
-  Future<void> setVolume(double volume);
-  void addListener(VoidCallback listener);
-  void removeListener(VoidCallback listener);
-  Future<void> dispose();
-}
-
 class PlayerControllerValue {
   const PlayerControllerValue({
     required this.isInitialized,
@@ -121,80 +121,177 @@ class PlayerControllerValue {
   final double aspectRatio;
 }
 
-class VideoPlayerControllerAdapter implements PlayerControllerAdapter {
-  VideoPlayerControllerAdapter(this._controller);
+abstract class PlayerControllerAdapter {
+  VideoController? get videoController;
+  PlayerControllerValue get value;
+  Stream<String> get errorStream;
+  Future<void> initialize();
+  Future<void> play();
+  Future<void> pause();
+  Future<void> seekTo(Duration position);
+  Future<void> setPlaybackSpeed(double speed);
+  Future<void> setVolume(double volume);
+  void addListener(VoidCallback listener);
+  void removeListener(VoidCallback listener);
+  Future<void> dispose();
+}
 
-  final VideoPlayerController _controller;
+class MediaKitControllerAdapter implements PlayerControllerAdapter {
+  MediaKitControllerAdapter(this._player) : _videoController = VideoController(_player);
+
+  final Player _player;
+  final VideoController _videoController;
+  final StreamController<String> _errorController = StreamController<String>.broadcast();
+  final List<StreamSubscription<dynamic>> _subscriptions = <StreamSubscription<dynamic>>[];
+  final List<VoidCallback> _listeners = <VoidCallback>[];
+
+  bool _isInitialized = false;
+  bool _isBuffering = false;
+  Duration _position = Duration.zero;
+  Duration _duration = Duration.zero;
+  double _rate = 1;
+  double _volume = 100;
+  double _aspectRatio = 16 / 9;
 
   @override
-  VideoPlayerController get videoController => _controller;
+  VideoController get videoController => _videoController;
 
   @override
-  PlayerControllerValue get value {
-    final value = _controller.value;
-    return PlayerControllerValue(
-      isInitialized: value.isInitialized,
-      isPlaying: value.isPlaying,
-      isBuffering: value.isBuffering,
-      position: value.position,
-      duration: value.duration,
-      playbackSpeed: value.playbackSpeed,
-      volume: value.volume,
-      aspectRatio: value.isInitialized && value.aspectRatio > 0
-          ? value.aspectRatio
-          : 16 / 9,
-    );
+  Stream<String> get errorStream => _errorController.stream;
+
+  @override
+  PlayerControllerValue get value => PlayerControllerValue(
+        isInitialized: _isInitialized,
+        isPlaying: _player.state.playing,
+        isBuffering: _isBuffering,
+        position: _position,
+        duration: _duration,
+        playbackSpeed: _rate,
+        volume: _volume,
+        aspectRatio: _aspectRatio > 0 ? _aspectRatio : 16 / 9,
+      );
+
+  @override
+  Future<void> initialize() async {
+    _subscriptions.addAll(<StreamSubscription<dynamic>>[
+      _player.stream.position.listen((value) {
+        _position = value;
+        _notifyListeners();
+      }),
+      _player.stream.duration.listen((value) {
+        _duration = value;
+        _notifyListeners();
+      }),
+      _player.stream.buffering.listen((value) {
+        _isBuffering = value;
+        _notifyListeners();
+      }),
+      _player.stream.rate.listen((value) {
+        _rate = value;
+        _notifyListeners();
+      }),
+      _player.stream.volume.listen((value) {
+        _volume = value;
+        _notifyListeners();
+      }),
+      _player.stream.width.listen((width) {
+        final height = _player.state.height;
+        if (width != null && height != null && width > 0 && height > 0) {
+          _aspectRatio = width / height;
+        }
+        _notifyListeners();
+      }),
+      _player.stream.height.listen((height) {
+        final width = _player.state.width;
+        if (width != null && height != null && width > 0 && height > 0) {
+          _aspectRatio = width / height;
+        }
+        _notifyListeners();
+      }),
+      _player.stream.error.listen((message) {
+        if (!_errorController.isClosed) {
+          _errorController.add(message);
+        }
+        _notifyListeners();
+      }),
+      _player.stream.playing.listen((_) => _notifyListeners()),
+      _player.stream.completed.listen((_) => _notifyListeners()),
+    ]);
+
+    _isInitialized = true;
+    _notifyListeners();
   }
 
   @override
-  Future<void> initialize() => _controller.initialize();
+  Future<void> play() => _player.play();
 
   @override
-  Future<void> play() => _controller.play();
+  Future<void> pause() => _player.pause();
 
   @override
-  Future<void> pause() => _controller.pause();
+  Future<void> seekTo(Duration position) => _player.seek(position);
 
   @override
-  Future<void> seekTo(Duration position) => _controller.seekTo(position);
+  Future<void> setPlaybackSpeed(double speed) => _player.setRate(speed);
 
   @override
-  Future<void> setPlaybackSpeed(double speed) => _controller.setPlaybackSpeed(speed);
+  Future<void> setVolume(double volume) => _player.setVolume(volume);
 
   @override
-  Future<void> setVolume(double volume) => _controller.setVolume(volume);
+  void addListener(VoidCallback listener) {
+    _listeners.add(listener);
+  }
 
   @override
-  void addListener(VoidCallback listener) => _controller.addListener(listener);
+  void removeListener(VoidCallback listener) {
+    _listeners.remove(listener);
+  }
 
   @override
-  void removeListener(VoidCallback listener) => _controller.removeListener(listener);
+  Future<void> dispose() async {
+    for (final subscription in _subscriptions) {
+      await subscription.cancel();
+    }
+    await _errorController.close();
+    await _player.dispose();
+  }
 
-  @override
-  Future<void> dispose() => _controller.dispose();
+  void _notifyListeners() {
+    for (final listener in List<VoidCallback>.from(_listeners)) {
+      listener();
+    }
+  }
 }
 
-typedef PlayerControllerFactory = Future<PlayerControllerAdapter> Function(Uri uri);
+typedef PlayerControllerFactory = Future<PlayerControllerAdapter> Function(
+  Uri uri,
+  Map<String, String> headers,
+);
 
 final playerControllerFactoryProvider = Provider<PlayerControllerFactory>((ref) {
-  return (Uri uri) async {
-    final controller = VideoPlayerController.networkUrl(uri);
-    return VideoPlayerControllerAdapter(controller);
+  return (Uri uri, Map<String, String> headers) async {
+    final player = Player();
+    await player.open(
+      Media(uri.toString(), httpHeaders: headers),
+      play: false,
+    );
+    return MediaKitControllerAdapter(player);
   };
 });
 
 class PlayerNotifier extends StateNotifier<PlayerState> {
-  PlayerNotifier(this._createController)
-      : super(const PlayerState(isInitializing: true));
+  PlayerNotifier(this._createController) : super(const PlayerState(isInitializing: true));
 
   final PlayerControllerFactory _createController;
   PlayerControllerAdapter? _controller;
   VoidCallback? _controllerListener;
+  StreamSubscription<String>? _errorSubscription;
 
-  VideoPlayerController? get videoController => _controller?.videoController;
+  VideoController? get videoController => _controller?.videoController;
 
   Future<void> initialize(PlayerSource source) async {
-    final uri = Uri.tryParse(source.playUrl);
+    final trimmedPlayUrl = source.playUrl.trim();
+    final uri = Uri.tryParse(trimmedPlayUrl);
     if (uri == null || !uri.hasScheme || uri.host.isEmpty) {
       state = state.copyWith(
         isInitializing: false,
@@ -207,7 +304,10 @@ class PlayerNotifier extends StateNotifier<PlayerState> {
     await _disposeController();
 
     try {
-      final controller = await _createController(uri);
+      final controller = await _createController(
+        uri,
+        source.httpHeaders ?? const <String, String>{},
+      );
       _attachController(controller);
       await controller.initialize();
       await controller.play();
@@ -271,6 +371,12 @@ class PlayerNotifier extends StateNotifier<PlayerState> {
   void _attachController(PlayerControllerAdapter controller) {
     _controller = controller;
     _controllerListener = _syncState;
+    _errorSubscription = controller.errorStream.listen((message) {
+      state = state.copyWith(
+        isInitializing: false,
+        errorMessage: message.isEmpty ? '播放器初始化失败' : message,
+      );
+    });
     controller.addListener(_syncState);
   }
 
@@ -301,6 +407,9 @@ class PlayerNotifier extends StateNotifier<PlayerState> {
   }
 
   Future<void> _disposeController() async {
+    await _errorSubscription?.cancel();
+    _errorSubscription = null;
+
     final controller = _controller;
     if (controller == null) {
       return;

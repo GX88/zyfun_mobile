@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:shadcn_ui/shadcn_ui.dart';
+import 'dart:convert';
 
 import '../../../data/models/history.dart';
 import '../../../data/models/iptv.dart';
@@ -295,6 +296,8 @@ class _LivePageState extends ConsumerState<LivePage> {
         'title': channel.name,
         'url': channel.url,
         'episode': channel.group ?? '直播',
+        if (channel.headers != null && channel.headers!.isNotEmpty)
+          'headers': jsonEncode(channel.headers),
       },
     );
     context.push(uri.toString());

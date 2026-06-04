@@ -1,6 +1,7 @@
 import 'package:go_router/go_router.dart';
 import 'package:flutter/material.dart';
 import 'package:shadcn_ui/shadcn_ui.dart';
+import 'dart:convert';
 
 import '../../core/constants/constants.dart';
 import '../../presentation/pages/detail/video_detail_page.dart';
@@ -8,6 +9,7 @@ import '../../presentation/pages/disclaimer/disclaimer_page.dart';
 import '../../presentation/pages/film/film_page.dart';
 import '../../presentation/pages/history/history_page.dart';
 import '../../presentation/pages/live/live_page.dart';
+import '../../presentation/pages/parse/parse_page.dart';
 import '../../presentation/pages/player/player_page.dart';
 import '../../presentation/pages/search/search_page.dart';
 import '../../presentation/pages/splash/splash_page.dart';
@@ -94,11 +96,26 @@ final GoRouter router = GoRouter(
         final title = state.uri.queryParameters['title'] ?? '播放器';
         final playUrl = state.uri.queryParameters['url'] ?? '';
         final episode = state.uri.queryParameters['episode'];
+        final encodedHeaders = state.uri.queryParameters['headers'];
+        Map<String, String>? httpHeaders;
+        if (encodedHeaders != null && encodedHeaders.isNotEmpty) {
+          try {
+            final decoded = jsonDecode(encodedHeaders);
+            if (decoded is Map) {
+              httpHeaders = decoded.map(
+                (key, value) => MapEntry(key.toString(), value.toString()),
+              );
+            }
+          } catch (_) {
+            httpHeaders = null;
+          }
+        }
         return PlayerPage(
           id: id,
           title: title,
           playUrl: playUrl,
           episode: episode,
+          httpHeaders: httpHeaders,
         );
       },
     ),
@@ -130,7 +147,7 @@ final GoRouter router = GoRouter(
     GoRoute(
       path: '/parse',
       name: 'parse',
-      builder: (context, state) => const PlaceholderPage(title: '解析'),
+      builder: (context, state) => const ParsePage(),
     ),
 
     GoRoute(
