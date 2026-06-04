@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:shadcn_ui/shadcn_ui.dart';
 
+import '../../core/constants/constants.dart';
+import 'buttons/app_buttons.dart';
+import 'texts.dart';
+
 class PlayerControlBar extends StatelessWidget {
   const PlayerControlBar({
     super.key,
@@ -27,34 +31,33 @@ class PlayerControlBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = ShadTheme.of(context);
-
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: <Widget>[
         if (isBuffering)
           Padding(
-            padding: const EdgeInsets.only(bottom: 12),
+            padding: const EdgeInsets.only(bottom: AppSpacing.md),
             child: Row(
               children: <Widget>[
                 const SizedBox(
-                  width: 16,
-                  height: 16,
+                  width: AppIconSize.sm,
+                  height: AppIconSize.sm,
                   child: CircularProgressIndicator(strokeWidth: 2),
                 ),
-                const SizedBox(width: 8),
-                Text('缓冲中...', style: theme.textTheme.small),
+                const SizedBox(width: AppSpacing.sm),
+                const SecondaryText('缓冲中...'),
               ],
             ),
           ),
         Row(
           children: <Widget>[
-            ShadButton(
+            PrimaryButton(
               onPressed: onTogglePlayPause,
-              child: Text(isPlaying ? '暂停' : isCompleted ? '重播' : '播放'),
+              label: isPlaying ? '暂停' : isCompleted ? '重播' : '播放',
+              size: AppButtonSize.small,
             ),
-            const SizedBox(width: 12),
-            Expanded(child: Text(positionLabel, style: theme.textTheme.small)),
+            const SizedBox(width: AppSpacing.md),
+            Expanded(child: SecondaryText(positionLabel)),
             SizedBox(
               width: 96,
               child: ShadSelect<double>(
@@ -80,8 +83,8 @@ class PlayerControlBar extends StatelessWidget {
             ),
           ],
         ),
-        const SizedBox(height: 12),
-        Text('音量 ${volume.toStringAsFixed(0)}', style: theme.textTheme.small),
+        const SizedBox(height: AppSpacing.md),
+        SecondaryText('音量 ${volume.toStringAsFixed(0)}'),
         ShadSlider(
           min: 0,
           max: 100,

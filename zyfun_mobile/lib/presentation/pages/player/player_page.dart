@@ -162,7 +162,7 @@ class _PlayerPageState extends ConsumerState<PlayerPage> with WidgetsBindingObse
                   const SizedBox(height: 16),
                   ShadCard(
                     title: Text('播放状态', style: theme.textTheme.h4),
-                      description: const Text('全屏与横屏已接入，后台播放与画中画等待播放器内核升级。'),
+                      description: const Text('全屏、后台播放与画中画能力已接入当前播放器实现。'),
                     child: Padding(
                       padding: const EdgeInsets.only(top: 16),
                       child: Column(

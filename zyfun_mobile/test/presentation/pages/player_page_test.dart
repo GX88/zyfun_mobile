@@ -74,6 +74,36 @@ void main() {
     expect(find.text('播放地址无效'), findsOneWidget);
   });
 
+  testWidgets('PlayerPage 初始化时会探测 PIP 支持状态', (tester) async {
+    final fakeController = _FakePlayerController();
+    final pipBridge = _RecordingPlayerPlatformBridge(isSupported: true);
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: <Override>[
+          playerControllerFactoryProvider.overrideWithValue(
+            (uri, headers) async => fakeController,
+          ),
+          backgroundPlaybackHandlerProvider.overrideWithValue(AppAudioHandler()),
+          playerPlatformBridgeProvider.overrideWithValue(pipBridge),
+          playerProgressSaveIntervalProvider.overrideWithValue(const Duration(days: 1)),
+        ],
+        child: const _TestPlayerApp(
+          child: PlayerPage(
+            id: 'video-3',
+            title: 'PIP 视频',
+            playUrl: 'https://example.com/video.mp4',
+          ),
+        ),
+      ),
+    );
+
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 50));
+
+    expect(pipBridge.supportCheckCalls, 1);
+  });
+
   testWidgets('PlayerPage 会恢复历史进度并定时回写', (tester) async {
     final fakeController = _FakePlayerController();
     final historyRepository = _FakeHistoryRepository(
@@ -223,6 +253,20 @@ class _FakePlayerPlatformBridge extends PlayerPlatformBridge {
 
   @override
   Future<bool> enterPictureInPicture() async => false;
+}
+
+class _RecordingPlayerPlatformBridge extends PlayerPlatformBridge {
+  _RecordingPlayerPlatformBridge({required this.isSupported})
+      : super(channel: const MethodChannel('zyfun_mobile/player_test_recording'));
+
+  final bool isSupported;
+  int supportCheckCalls = 0;
+
+  @override
+  Future<bool> isPictureInPictureSupported() async {
+    supportCheckCalls += 1;
+    return isSupported;
+  }
 }
 
 class _FakePlayerController implements PlayerControllerAdapter {

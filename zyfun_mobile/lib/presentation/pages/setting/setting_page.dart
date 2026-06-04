@@ -5,7 +5,9 @@ import 'package:go_router/go_router.dart';
 import 'package:shadcn_ui/shadcn_ui.dart';
 
 import '../../../data/services/config_import_service.dart';
+import '../../../core/constants/constants.dart';
 import '../../components/app_bottom_nav_bar.dart';
+import '../../components/app_bar.dart';
 import '../../providers/iptv_provider.dart';
 import '../../providers/setting_provider.dart';
 import '../../providers/site_provider.dart';
@@ -45,9 +47,9 @@ class _SettingPageState extends ConsumerState<SettingPage> {
     final theme = ShadTheme.of(context);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('设置')),
+      appBar: const ZySectionAppBar(title: '我的'),
       body: ListView(
-        padding: const EdgeInsets.all(16),
+        padding: AppSpacing.pageInsets,
         children: <Widget>[
           ShadCard(
             title: Text('外观', style: theme.textTheme.h4),
@@ -97,7 +99,7 @@ class _SettingPageState extends ConsumerState<SettingPage> {
               ),
             ),
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: AppSpacing.lg),
           ShadCard(
             title: Text('配置摘要', style: theme.textTheme.h4),
             description: const Text('当前展示关键配置，并提供统一组件展示入口。'),
@@ -135,11 +137,19 @@ class _SettingPageState extends ConsumerState<SettingPage> {
                       child: const Text('打开 AI 功能页'),
                     ),
                   ),
+                  const SizedBox(height: 12),
+                  SizedBox(
+                    width: double.infinity,
+                    child: ShadButton.outline(
+                      onPressed: () => context.push('/sniffer'),
+                      child: const Text('打开嗅探页'),
+                    ),
+                  ),
                 ],
               ),
             ),
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: AppSpacing.lg),
           ShadCard(
             title: Text('导入配置', style: theme.textTheme.h4),
             description: const Text('导入桌面版 JSON 配置，当前优先接入可用的 T1_JSON 站点。'),
@@ -205,7 +215,7 @@ class _SettingPageState extends ConsumerState<SettingPage> {
           ),
         ],
       ),
-      bottomNavigationBar: const AppBottomNavBar(selectedIndex: 4),
+      bottomNavigationBar: const AppBottomNavBar(selectedIndex: 3),
     );
   }
 

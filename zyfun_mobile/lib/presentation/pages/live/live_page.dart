@@ -5,8 +5,10 @@ import 'package:shadcn_ui/shadcn_ui.dart';
 import 'dart:convert';
 
 import '../../../data/models/history.dart';
+import '../../../core/constants/constants.dart';
 import '../../../data/models/iptv.dart';
 import '../../components/app_bottom_nav_bar.dart';
+import '../../components/app_bar.dart';
 import '../../providers/app_providers.dart';
 import '../../providers/iptv_provider.dart';
 
@@ -19,6 +21,7 @@ class LivePage extends ConsumerStatefulWidget {
 
 class _LivePageState extends ConsumerState<LivePage> {
   String? _selectedGroup;
+  int _selectedTabIndex = 0;
 
   @override
   void initState() {
@@ -39,13 +42,15 @@ class _LivePageState extends ConsumerState<LivePage> {
     final currentChannel = state.selectedChannel;
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('直播'),
+      appBar: ZyTabAppBar(
+        tabs: const <String>['频道', '收藏', '最近'],
+        selectedIndex: _selectedTabIndex,
+        onSelected: (index) => setState(() => _selectedTabIndex = index),
         actions: <Widget>[
           IconButton(
-            tooltip: '设置',
-            onPressed: () => context.push('/setting'),
-            icon: const Icon(LucideIcons.settings2),
+            tooltip: '搜索',
+            onPressed: () => context.push('/search'),
+            icon: const Icon(LucideIcons.search, size: AppIconSize.md),
           ),
         ],
       ),
@@ -237,7 +242,7 @@ class _LivePageState extends ConsumerState<LivePage> {
           ],
         ),
       ),
-      bottomNavigationBar: const AppBottomNavBar(selectedIndex: 1),
+      bottomNavigationBar: const AppBottomNavBar(selectedIndex: 2),
     );
   }
 

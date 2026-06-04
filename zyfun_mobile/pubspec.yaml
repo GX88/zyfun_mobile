@@ -56,6 +56,9 @@ dependencies:
   # 云同步
   webdav_client: ^1.2.0
 
+  # WebView / 嗅探基础容器
+  webview_flutter: ^4.8.0
+
   # 图片加载
   cached_network_image: ^3.3.0
 

@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:shadcn_ui/shadcn_ui.dart';
+
+import '../../core/constants/constants.dart';
+import 'buttons/app_buttons.dart';
+import 'inputs/app_inputs.dart';
 
 class AppSearchBar extends StatelessWidget {
   const AppSearchBar({
@@ -26,16 +29,15 @@ class AppSearchBar extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: <Widget>[
-        ShadInput(
+        SearchInput(
           controller: controller,
-          placeholder: Text(placeholder),
-          leading: const Icon(LucideIcons.search),
+          placeholder: placeholder,
           trailing: isSearching
               ? const Padding(
-                  padding: EdgeInsets.all(8),
+                  padding: EdgeInsets.all(AppSpacing.sm),
                   child: SizedBox(
-                    width: 16,
-                    height: 16,
+                    width: AppIconSize.sm,
+                    height: AppIconSize.sm,
                     child: CircularProgressIndicator(strokeWidth: 2),
                   ),
                 )
@@ -43,10 +45,10 @@ class AppSearchBar extends StatelessWidget {
           onSubmitted: onSubmitted,
         ),
         if (buttonLabel != null) ...<Widget>[
-          const SizedBox(height: 12),
-          ShadButton(
+          const SizedBox(height: AppSpacing.md),
+          PrimaryButton(
             onPressed: buttonEnabled ? onSearch : null,
-            child: Text(buttonLabel!),
+            label: buttonLabel!,
           ),
         ],
       ],

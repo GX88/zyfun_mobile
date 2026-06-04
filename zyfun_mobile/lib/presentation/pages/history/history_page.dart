@@ -4,7 +4,10 @@ import 'package:go_router/go_router.dart';
 import 'package:shadcn_ui/shadcn_ui.dart';
 
 import '../../../data/models/history.dart';
-import '../../components/app_bottom_nav_bar.dart';
+import '../../../core/constants/constants.dart';
+import '../../components/app_bar.dart';
+import '../../components/buttons/app_buttons.dart';
+import '../../components/texts.dart';
 import '../../providers/history_provider.dart';
 
 class HistoryPage extends ConsumerWidget {
@@ -17,8 +20,8 @@ class HistoryPage extends ConsumerWidget {
     final theme = ShadTheme.of(context);
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('历史'),
+      appBar: ZySectionAppBar(
+        title: '历史记录',
         actions: <Widget>[
           IconButton(
             tooltip: '清空历史',
@@ -28,9 +31,11 @@ class HistoryPage extends ConsumerWidget {
             icon: const Icon(LucideIcons.trash2),
           ),
           IconButton(
-            tooltip: '设置',
-            onPressed: () => context.push('/setting'),
-            icon: const Icon(LucideIcons.settings2),
+            tooltip: '编辑',
+            onPressed: historyAsync.valueOrNull?.isEmpty ?? true
+                ? null
+                : () => _confirmClearAll(context, notifier),
+            icon: const Icon(LucideIcons.squarePen, size: AppIconSize.md),
           ),
         ],
       ),
@@ -38,16 +43,19 @@ class HistoryPage extends ConsumerWidget {
         data: (histories) {
           if (histories.isEmpty) {
             return Center(
-              child: Text('暂无播放历史', style: theme.textTheme.muted),
+              child: SecondaryText(
+                '暂无播放历史',
+                style: theme.textTheme.muted,
+              ),
             );
           }
 
           return RefreshIndicator(
             onRefresh: notifier.refresh,
             child: ListView.separated(
-              padding: const EdgeInsets.all(16),
+              padding: AppSpacing.pageInsets,
               itemCount: histories.length,
-              separatorBuilder: (_, __) => const SizedBox(height: 12),
+              separatorBuilder: (_, __) => const SizedBox(height: AppSpacing.md),
               itemBuilder: (context, index) {
                 final item = histories[index];
                 return _HistoryCard(
@@ -61,10 +69,9 @@ class HistoryPage extends ConsumerWidget {
         },
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (error, _) => Center(
-          child: Text(error.toString(), style: theme.textTheme.muted),
+          child: SecondaryText(error.toString(), style: theme.textTheme.muted),
         ),
       ),
-      bottomNavigationBar: const AppBottomNavBar(selectedIndex: 2),
     );
   }
 
@@ -145,35 +152,53 @@ class _HistoryCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = ShadTheme.of(context);
-
-    return ShadCard(
-      title: Text(item.title, style: theme.textTheme.large),
-      description: Text(item.episodeName ?? '继续观看', style: theme.textTheme.muted),
+    return Container(
+      decoration: BoxDecoration(
+        color: Theme.of(context).brightness == Brightness.dark
+            ? AppColors.surfaceDark
+            : AppColors.surface,
+        borderRadius: AppRadius.card,
+        border: Border.all(
+          color: Theme.of(context).brightness == Brightness.dark
+              ? AppColors.borderDark
+              : AppColors.border,
+        ),
+        boxShadow: Theme.of(context).brightness == Brightness.dark
+            ? AppShadows.darkCard
+            : AppShadows.md,
+      ),
       child: Padding(
-        padding: const EdgeInsets.only(top: 16),
+        padding: AppSpacing.cardInsets,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: <Widget>[
-            Text('进度 ${item.progressText} / ${item.durationText}'),
-            const SizedBox(height: 8),
-            LinearProgressIndicator(value: item.progressPercent),
-            const SizedBox(height: 12),
-            Text(
-              '上次观看 ${_formatUpdatedAt(item.updatedAt)}',
-              style: theme.textTheme.small,
+            PrimaryText(
+              item.title,
+              style: AppTypography.h3,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: AppSpacing.xs),
+            SecondaryText(item.episodeName ?? '继续观看'),
+            const SizedBox(height: AppSpacing.md),
+            SecondaryText('进度 ${item.progressText} / ${item.durationText}'),
+            const SizedBox(height: AppSpacing.sm),
+            LinearProgressIndicator(value: item.progressPercent),
+            const SizedBox(height: AppSpacing.md),
+            SecondaryText('上次观看 ${_formatUpdatedAt(item.updatedAt)}'),
+            const SizedBox(height: AppSpacing.md),
             Row(
               children: <Widget>[
-                ShadButton(
+                PrimaryButton(
                   onPressed: onContinue,
-                  child: const Text('继续观看'),
+                  label: '继续观看',
+                  size: AppButtonSize.small,
                 ),
-                const SizedBox(width: 8),
-                ShadButton.outline(
+                const SizedBox(width: AppSpacing.sm),
+                OutlineActionButton(
                   onPressed: onDelete,
-                  child: const Text('删除'),
+                  label: '删除',
+                  size: AppButtonSize.small,
                 ),
               ],
             ),

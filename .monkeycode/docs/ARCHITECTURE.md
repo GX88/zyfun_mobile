@@ -20,7 +20,7 @@ main.dart
 |------|----------|
 | `lib/app/` | 应用壳与路由配置 |
 | `lib/config/` | 日志等配置入口 |
-| `lib/core/` | 常量、错误类型、工具能力 |
+| `lib/core/` | 常量、错误类型、工具能力、UI design tokens |
 | `lib/data/models/` | 数据模型和生成代码 |
 | `lib/data/datasources/local/` | SQLite、DAO、键值存储 |
 | `lib/data/datasources/remote/` | Dio 基础客户端 |
@@ -28,8 +28,8 @@ main.dart
 | `lib/domain/repositories/` | 仓库抽象接口和部分状态模型 |
 | `lib/presentation/pages/` | 页面 UI |
 | `lib/presentation/providers/` | Riverpod Provider 与 Notifier |
-| `lib/presentation/components/` | 通用组件，如底部导航 |
-| `lib/theme/` | Shad 主题配置 |
+| `lib/presentation/components/` | 通用组件，如底部导航、搜索栏、文本组件 |
+| `lib/theme/` | Shad 主题配置与亮暗色视觉规范 |
 | `test/` | 初始化、模型、DAO、仓库测试 |
 
 ## 3. 启动流程
@@ -49,6 +49,7 @@ main.dart
 - 在 `initState` 中调用 `settingNotifierProvider.notifier.load()` 读取本地设置。
 - 根据 `Setting.theme` 映射到 `ThemeMode.light`、`ThemeMode.dark` 或 `ThemeMode.system`。
 - 使用 `ShadApp.router` 绑定主题与路由。
+- 主题定义由 `lib/theme/app_theme.dart` 驱动，并消费 `lib/core/constants/` 下的 UI token。
 - 注册 `zh_CN`、`zh_TW`、`en` 三种 `Locale`。
 
 ## 4. 分层说明
@@ -70,8 +71,34 @@ main.dart
 
 ### 组件现状
 
-- `AppBottomNavBar` 封装底部导航，支持影视、直播、历史、设置四个入口。
+- `AppBottomNavBar` 已切换为 4 栏设计稿风格，支持影视、探索、直播、我的四个入口。
+- 新增 `presentation/components/app_bar.dart`，统一封装二级页标题栏、搜索型标题栏、Tab 型标题栏。
+- `AppSearchBar` 已接入新的搜索输入框视觉规范。
+- 新增 `presentation/components/texts.dart`，提供统一的主文本、次文本、说明文本、数字文本组件。
+- 新增 `presentation/components/buttons/app_buttons.dart`，封装主按钮、次按钮、描边按钮、幽灵按钮、危险按钮、链接按钮和统一尺寸规范。
+- 新增 `presentation/components/inputs/app_inputs.dart`，封装搜索输入框、普通文本输入框、密码输入框。
+- 新增 `presentation/components/cards/app_cards.dart`，封装 Banner 卡片、功能卡片、统计卡片以及统一图片占位逻辑。
+- 新增 `presentation/components/chips/app_chips.dart`，封装普通标签、状态标签和分类标签。
 - 页面广泛使用 `ShadCard`、`ShadButton`、`ShadInput`、`ShadSwitch` 等 `shadcn_ui` 组件。
+
+### 页面导航现状
+
+- `FilmPage` 已切换为搜索型顶部栏，右侧提供历史和刷新图标。
+- `SearchPage` 已切换为搜索型顶部栏。
+- `LivePage` 已切换为 Tab 型顶部栏，顶部标签为“频道 / 收藏 / 最近”，右侧为搜索图标。
+- `HistoryPage`、`AboutPage` 已切换为标准二级页标题栏。
+- `SettingPage` 顶部标题已改为“我的”，与新版底部导航映射对齐。
+
+### UI Token 现状
+
+当前 UI 重构已新增一组基础 design token，位于 `lib/core/constants/`：
+
+- `colors.dart`: 主题色、状态色、中性色、渐变定义
+- `spacing.dart`: 4px 网格间距体系和常用 EdgeInsets
+- `radius.dart`: 按钮、输入框、卡片等圆角规范
+- `shadows.dart`: 浅色/深色阴影预设
+- `typography.dart`: 字体、字号、字重和数字文本规范
+- `icons.dart`: 图标尺寸规范
 
 ## 4.2 状态管理层
 

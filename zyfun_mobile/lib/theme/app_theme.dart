@@ -1,55 +1,47 @@
 import 'package:flutter/material.dart';
 import 'package:shadcn_ui/shadcn_ui.dart';
 
+import '../core/constants/constants.dart';
+
 /// 应用主题配置
 class AppTheme {
-  static const BorderRadius _radius = BorderRadius.all(Radius.circular(16));
-
-  static const Color _brandPrimary = Color(0xFF4F7CFF);
-  static const Color _brandPrimaryDark = Color(0xFF7AA2FF);
-  static const Color _brandCanvasLight = Color(0xFFF5F7FC);
-  static const Color _brandCanvasDark = Color(0xFF0F172A);
-  static const Color _brandCardLight = Color(0xFFFFFFFF);
-  static const Color _brandCardDark = Color(0xFF111827);
-
-  static const List<BoxShadow> _cardShadows = <BoxShadow>[
-    BoxShadow(
-      color: Color(0x140F172A),
-      blurRadius: 24,
-      offset: Offset(0, 12),
-    ),
-  ];
+  static const BorderRadius _radius = AppRadius.largeCard;
 
   /// 亮色主题
   static ShadThemeData get lightTheme => ShadThemeData(
         brightness: Brightness.light,
         radius: _radius,
         colorScheme: const ShadZincColorScheme.light(
-          primary: _brandPrimary,
-          background: _brandCanvasLight,
-          card: _brandCardLight,
+          primary: AppColors.primary,
+          background: AppColors.backgroundMuted,
+          card: AppColors.surface,
+          border: AppColors.border,
+          muted: AppColors.textSecondary,
+          secondary: AppColors.primarySoft,
+          secondaryForeground: AppColors.primary,
+          destructive: AppColors.error,
         ),
         primaryButtonTheme: const ShadButtonTheme(
-          height: 46,
-          backgroundColor: _brandPrimary,
+          height: 44,
+          backgroundColor: AppColors.primary,
           foregroundColor: Colors.white,
         ),
         secondaryButtonTheme: const ShadButtonTheme(
           height: 44,
-          backgroundColor: Color(0xFFEAF0FF),
-          foregroundColor: _brandPrimary,
+          backgroundColor: AppColors.primarySoft,
+          foregroundColor: AppColors.primary,
         ),
         ghostButtonTheme: const ShadButtonTheme(
           height: 44,
-          foregroundColor: Color(0xFF334155),
+          foregroundColor: AppColors.textPrimary,
         ),
         cardTheme: ShadCardTheme(
-          backgroundColor: _brandCardLight,
+          backgroundColor: AppColors.surface,
           radius: _radius,
-          padding: const EdgeInsets.all(18),
-          shadows: _cardShadows,
+          padding: AppSpacing.cardInsets,
+          shadows: AppShadows.md,
           border: ShadBorder.all(
-            color: const Color(0xFFE2E8F0),
+            color: AppColors.border,
             radius: _radius,
           ),
         ),
@@ -60,37 +52,36 @@ class AppTheme {
         brightness: Brightness.dark,
         radius: _radius,
         colorScheme: const ShadSlateColorScheme.dark(
-          primary: _brandPrimaryDark,
-          background: _brandCanvasDark,
-          card: _brandCardDark,
+          primary: AppColors.primaryDark,
+          background: AppColors.backgroundDark,
+          card: AppColors.surfaceDark,
+          border: AppColors.borderDark,
+          muted: AppColors.textSecondaryDark,
+          secondary: AppColors.surfaceSubtleDark,
+          secondaryForeground: AppColors.textPrimaryDark,
+          destructive: AppColors.error,
         ),
         primaryButtonTheme: const ShadButtonTheme(
-          height: 46,
-          backgroundColor: _brandPrimaryDark,
-          foregroundColor: Color(0xFF0F172A),
+          height: 44,
+          backgroundColor: AppColors.primaryDark,
+          foregroundColor: AppColors.backgroundDark,
         ),
         secondaryButtonTheme: const ShadButtonTheme(
           height: 44,
-          backgroundColor: Color(0xFF172036),
-          foregroundColor: Color(0xFFD7E3FF),
+          backgroundColor: AppColors.surfaceSubtleDark,
+          foregroundColor: AppColors.textPrimaryDark,
         ),
         ghostButtonTheme: const ShadButtonTheme(
           height: 44,
-          foregroundColor: Color(0xFFE5E7EB),
+          foregroundColor: AppColors.textPrimaryDark,
         ),
         cardTheme: ShadCardTheme(
-          backgroundColor: _brandCardDark,
+          backgroundColor: AppColors.surfaceDark,
           radius: _radius,
-          padding: const EdgeInsets.all(18),
-          shadows: const <BoxShadow>[
-            BoxShadow(
-              color: Color(0x33000000),
-              blurRadius: 28,
-              offset: Offset(0, 16),
-            ),
-          ],
+          padding: AppSpacing.cardInsets,
+          shadows: AppShadows.darkCard,
           border: ShadBorder.all(
-            color: const Color(0xFF1F2937),
+            color: AppColors.borderDark,
             radius: _radius,
           ),
         ),

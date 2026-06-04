@@ -2,7 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shadcn_ui/shadcn_ui.dart';
 
+import '../../../core/constants/constants.dart';
 import '../../components/app_bottom_nav_bar.dart';
+import '../../components/app_bar.dart';
+import '../../components/texts.dart';
 import '../../providers/site_provider.dart';
 
 class SearchPage extends ConsumerStatefulWidget {
@@ -33,11 +36,11 @@ class _SearchPageState extends ConsumerState<SearchPage> {
   Widget build(BuildContext context) {
     final state = ref.watch(siteNotifierProvider);
     final notifier = ref.read(siteNotifierProvider.notifier);
-    final theme = ShadTheme.of(context);
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('搜索'),
+      appBar: ZySearchAppBar(
+        placeholder: '搜索影视、演员、导演',
+        onTap: () {},
         actions: <Widget>[
           IconButton(
             tooltip: '清空',
@@ -50,7 +53,7 @@ class _SearchPageState extends ConsumerState<SearchPage> {
         ],
       ),
       body: ListView(
-        padding: const EdgeInsets.all(16),
+        padding: AppSpacing.pageInsets,
         children: <Widget>[
           AppSearchBar(
             controller: _controller,
@@ -62,22 +65,21 @@ class _SearchPageState extends ConsumerState<SearchPage> {
                 ? '请先选择站点'
                 : '搜索 ${state.selectedSite!.name}',
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: AppSpacing.lg),
           if (state.searchKeyword.isNotEmpty)
-            Text(
+            SecondaryText(
               '“${state.searchKeyword}” 共 ${state.searchResults.length} 条结果',
-              style: theme.textTheme.muted,
             ),
-          const SizedBox(height: 12),
+          const SizedBox(height: AppSpacing.md),
           if (state.searchResults.isEmpty && state.searchKeyword.isNotEmpty)
             ShadCard(
-              title: Text('暂无结果', style: theme.textTheme.large),
+              title: Text('暂无结果', style: AppTypography.h3),
               description: const Text('当前搜索页使用演示数据流，后续会接真实站点搜索接口。'),
             )
           else
             ...state.searchResults.map(
               (video) => Padding(
-                padding: const EdgeInsets.only(bottom: 12),
+                padding: const EdgeInsets.only(bottom: AppSpacing.md),
                 child: VideoCard(
                   video: video,
                   showPlayButton: false,
@@ -86,6 +88,7 @@ class _SearchPageState extends ConsumerState<SearchPage> {
             ),
         ],
       ),
+      bottomNavigationBar: const AppBottomNavBar(selectedIndex: 1),
     );
   }
 }

@@ -17,6 +17,7 @@ import '../../presentation/pages/player/player_page.dart';
 import '../../presentation/pages/search/search_page.dart';
 import '../../presentation/pages/splash/splash_page.dart';
 import '../../presentation/pages/shadcn/shadcn_components_page.dart';
+import '../../presentation/pages/sniffer/sniffer_page.dart';
 import '../../presentation/pages/setting/setting_page.dart';
 
 /// 应用路由配置
@@ -187,6 +188,14 @@ final GoRouter router = GoRouter(
       path: '/parse',
       name: 'parse',
       builder: (context, state) => const ParsePage(),
+    ),
+
+    GoRoute(
+      path: RouteConstants.sniffer,
+      name: 'sniffer',
+      builder: (context, state) => SnifferPage(
+        initialUrl: state.uri.queryParameters['url'],
+      ),
     ),
 
     GoRoute(

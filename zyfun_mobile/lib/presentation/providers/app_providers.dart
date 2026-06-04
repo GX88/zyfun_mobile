@@ -22,6 +22,7 @@ import '../../domain/repositories/setting_repository.dart';
 import '../../domain/repositories/site_repository.dart';
 import '../../services/background_playback_service.dart';
 import '../../services/player_platform_bridge.dart';
+import '../../services/sniffer_service.dart';
 
 final appDatabaseProvider = Provider<AppDatabase>((ref) {
   return AppDatabase.instance;
@@ -123,4 +124,8 @@ final backgroundPlaybackHandlerProvider = Provider<AppAudioHandler>((ref) {
 
 final playerPlatformBridgeProvider = Provider<PlayerPlatformBridge>((ref) {
   return const PlayerPlatformBridge();
+});
+
+final snifferServiceProvider = Provider<SnifferService>((ref) {
+  return const SnifferService();
 });

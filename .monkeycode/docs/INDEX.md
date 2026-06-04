@@ -20,6 +20,7 @@
 
 - Flutter 应用入口、`ProviderScope`、日志初始化。
 - `ShadApp.router` 主题配置和基础国际化配置。
+- 新的 UI design token 基础层，包含颜色、间距、圆角、阴影、排版和图标尺寸常量。
 - GoRouter 路由骨架，包含 `/film`、`/live`、`/history`、`/favorite`、`/setting`、`/player/:id`、`/detail/:id`、`/search`、`/parse`。
 - SQLite 数据库初始化与表结构创建。
 - `Site`、`Iptv`、`Analyze`、`History`、`Favorite`、`Setting`、`Video` 等模型及其生成代码。
@@ -47,6 +48,7 @@
 - 应用入口：`zyfun_mobile/lib/main.dart`
 - 应用壳：`zyfun_mobile/lib/app/app.dart`
 - 路由配置：`zyfun_mobile/lib/app/routes/app_routes.dart`
+- UI token：`zyfun_mobile/lib/core/constants/`
 - 依赖注册：`zyfun_mobile/lib/presentation/providers/app_providers.dart`
 - SQLite 初始化：`zyfun_mobile/lib/data/datasources/local/app_database.dart`
 

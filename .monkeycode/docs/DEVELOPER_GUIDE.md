@@ -13,6 +13,8 @@
 5. `lib/data/datasources/local/app_database.dart`
 6. `lib/data/repositories/`
 7. `lib/presentation/pages/`
+8. `lib/core/constants/`
+9. `lib/theme/app_theme.dart`
 
 ## 2. 开发环境
 
@@ -78,6 +80,19 @@ flutter pub run build_runner build --delete-conflicting-outputs
 ## 4.4 数据库存储边界
 
 当前完整设置对象写入 `settings` 表，键为 `StorageKeys.setting`。同时默认站点、默认直播源、默认解析等信息使用 `KeyValueStorage` 单独保存。扩展配置时，先确认数据应该进入 SQLite 还是键值存储。
+
+## 4.5 UI 重构基础层
+
+当前仓库已经开始接入新的 UI design token 体系，后续 UI 改造优先复用这些底层常量，而不是在页面里写死数值：
+
+- `AppColors`: 主题色、状态色、背景色、渐变
+- `AppSpacing`: 页面边距、卡片间距、按钮内边距
+- `AppRadius`: 按钮、输入框、卡片圆角
+- `AppShadows`: 卡片和悬浮层阴影
+- `AppTypography`: 标题、正文、说明、数字文本样式
+- `AppIconSize`: 图标尺寸规范
+
+新增组件时，优先保持这些 token 作为唯一视觉来源，避免页面级重复定义颜色或间距。
 
 ## 5. 测试现状
 

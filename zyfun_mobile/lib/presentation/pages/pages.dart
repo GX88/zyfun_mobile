@@ -11,4 +11,5 @@ export 'player/player_page.dart';
 export 'search/search_page.dart';
 export 'splash/splash_page.dart';
 export 'shadcn/shadcn_components_page.dart';
+export 'sniffer/sniffer_page.dart';
 export 'setting/setting_page.dart';

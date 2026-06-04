@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:shadcn_ui/shadcn_ui.dart';
+
+import '../../core/constants/constants.dart';
+import 'buttons/app_buttons.dart';
+import 'texts.dart';
 
 class NavigationMenuItem {
   const NavigationMenuItem({
@@ -28,26 +31,40 @@ class NavigationMenuCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = ShadTheme.of(context);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    return ShadCard(
-      title: Text(title, style: theme.textTheme.h4),
-      description: Text(description),
-      child: Padding(
-        padding: const EdgeInsets.only(top: 16),
-        child: Wrap(
-          spacing: 8,
-          runSpacing: 8,
-          children: items
-              .map(
-                (item) => ShadButton.outline(
-                  onPressed: () => context.push(item.route),
-                  leading: Icon(item.icon),
-                  child: Text(item.label),
-                ),
-              )
-              .toList(),
+    return Container(
+      padding: AppSpacing.cardInsets,
+      decoration: BoxDecoration(
+        color: isDark ? AppColors.surfaceDark : AppColors.surface,
+        borderRadius: AppRadius.card,
+        border: Border.all(
+          color: isDark ? AppColors.borderDark : AppColors.border,
         ),
+        boxShadow: isDark ? AppShadows.darkCard : AppShadows.md,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          PrimaryText(title, style: AppTypography.h3),
+          const SizedBox(height: AppSpacing.xs),
+          SecondaryText(description),
+          const SizedBox(height: AppSpacing.lg),
+          Wrap(
+            spacing: AppSpacing.sm,
+            runSpacing: AppSpacing.sm,
+            children: items
+                .map(
+                  (item) => OutlineActionButton(
+                    onPressed: () => context.push(item.route),
+                    label: item.label,
+                    leading: Icon(item.icon, size: AppIconSize.sm),
+                    size: AppButtonSize.small,
+                  ),
+                )
+                .toList(),
+          ),
+        ],
       ),
     );
   }
