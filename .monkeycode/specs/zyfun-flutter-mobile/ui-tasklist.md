@@ -246,13 +246,13 @@
      - 实现右侧频道列表
      - 实现底部迷你播放器
 
-   - [ ] 17.4 我的页 (ProfilePage)
-     - 重构 `lib/presentation/pages/profile/profile_page.dart`
-     - 应用我的页布局模板
-     - 实现用户信息区 (头像、昵称)
-     - 实现 VIP 卡片 (金色渐变)
-     - 实现数据统计区
-     - 实现功能列表 (历史、收藏、下载、设置、关于)
+   - [x] 17.4 我的页 (ProfilePage)
+      - 当前由 `lib/presentation/pages/setting/setting_page.dart` 暂时承载“我的”Tab UI
+      - 应用我的页布局模板
+      - 实现用户信息区 (头像、昵称)
+      - 实现 VIP 卡片 (金色渐变)
+      - 实现数据统计区
+      - 实现功能列表 (历史、收藏、下载、设置、关于)
 
    - [ ] 17.5 详情页 (VideoDetailPage)
      - 重构 `lib/presentation/pages/detail/video_detail_page.dart`
@@ -274,18 +274,18 @@
      - 实现选集列表
      - 实现弹幕开关
 
-   - [ ] 17.7 历史页 (HistoryPage)
-     - 重构 `lib/presentation/pages/history/history_page.dart`
-     - 实现标准 AppBar (返回 + 标题 + 编辑)
-     - 实现历史记录列表
-     - 实现播放位置标记
+   - [x] 17.7 历史页 (HistoryPage)
+      - 重构 `lib/presentation/pages/history/history_page.dart`
+      - 实现标准 AppBar (返回 + 标题 + 编辑)
+      - 实现历史记录列表
+      - 实现播放位置标记
      - 实现单条删除和批量清空
 
-   - [ ] 17.8 收藏页 (FavoritePage)
-     - 重构 `lib/presentation/pages/favorite/favorite_page.dart`
-     - 实现标准 AppBar (返回 + 标题)
-     - 实现收藏视频 Grid 列表
-     - 实现取消收藏操作
+   - [x] 17.8 收藏页 (FavoritePage)
+      - 重构 `lib/presentation/pages/favorite/favorite_page.dart`
+      - 实现标准 AppBar (返回 + 标题)
+      - 实现收藏视频 Grid 列表
+      - 实现取消收藏操作
 
    - [ ] 17.9 搜索页 (SearchPage)
       - 重构 `lib/presentation/pages/search/search_page.dart`
@@ -301,11 +301,11 @@
      - 实现选择器组件
      - 实现导入导出功能 UI
 
-   - [ ] 17.11 关于页 (AboutPage)
-     - 重构 `lib/presentation/pages/about/about_page.dart`
-     - 实现应用信息卡片
-     - 实现版本号显示
-     - 实现检查更新按钮
+   - [x] 17.11 关于页 (AboutPage)
+      - 重构 `lib/presentation/pages/about/about_page.dart`
+      - 实现应用信息卡片
+      - 实现版本号显示
+      - 实现检查更新按钮
      - 实现开源协议说明
 
    - [ ] 17.12 AI 功能页 (AiPage)
