@@ -6,17 +6,17 @@ on:
     branches:
       - master
     paths:
-      - 'lib/**'
-      - 'android/**'
-      - 'pubspec.yaml'
-      - 'pubspec.lock'
+      - 'zyfun_mobile/lib/**'
+      - 'zyfun_mobile/android/**'
+      - 'zyfun_mobile/pubspec.yaml'
+      - 'zyfun_mobile/pubspec.lock'
       - '.github/workflows/android-debug-apk.yml'
   pull_request:
     paths:
-      - 'lib/**'
-      - 'android/**'
-      - 'pubspec.yaml'
-      - 'pubspec.lock'
+      - 'zyfun_mobile/lib/**'
+      - 'zyfun_mobile/android/**'
+      - 'zyfun_mobile/pubspec.yaml'
+      - 'zyfun_mobile/pubspec.lock'
       - '.github/workflows/android-debug-apk.yml'
 
 permissions:
@@ -26,6 +26,9 @@ jobs:
   build-debug-apk:
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    defaults:
+      run:
+        working-directory: zyfun_mobile
 
     steps:
       - name: Checkout code
@@ -56,12 +59,12 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: zyfun-mobile-debug-apk
-          path: build/app/outputs/flutter-apk/app-debug.apk
+          path: zyfun_mobile/build/app/outputs/flutter-apk/app-debug.apk
           if-no-files-found: error
           retention-days: 7
 
       - name: Publish build summary
         run: |
           echo "## Android Debug APK" >> "$GITHUB_STEP_SUMMARY"
-          echo 'Built file: `build/app/outputs/flutter-apk/app-debug.apk`' >> "$GITHUB_STEP_SUMMARY"
+          echo 'Built file: `zyfun_mobile/build/app/outputs/flutter-apk/app-debug.apk`' >> "$GITHUB_STEP_SUMMARY"
           echo 'Artifact name: `zyfun-mobile-debug-apk`' >> "$GITHUB_STEP_SUMMARY"
