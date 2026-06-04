@@ -231,15 +231,15 @@
      - 实现继续观看横向列表
      - 实现源状态监控卡片
 
-   - [ ] 17.2 探索页 (ExplorePage)
-     - 重构 `lib/presentation/pages/explore/explore_page.dart`
-     - 应用列表页布局模板
-     - 实现左侧分类导航
-     - 实现右侧视频 Grid 列表
-     - 实现筛选组件 (年代、类型、地区)
-     - 实现搜索历史记录
+   - [x] 17.2 探索页 (ExplorePage)
+      - 当前由 `lib/presentation/pages/search/search_page.dart` 暂时承载探索 Tab UI
+      - 应用列表页布局模板
+      - 实现左侧分类导航
+      - 实现右侧视频 Grid 列表
+      - 实现筛选组件 (年代、类型、地区)
+      - 实现搜索历史记录
 
-   - [ ] 17.3 直播页 (LivePage)
+   - [x] 17.3 直播页 (LivePage)
      - 重构 `lib/presentation/pages/live/live_page.dart`
      - 实现 Tab 切换顶栏 (频道/收藏/最近)
      - 实现左侧频道分类
@@ -288,11 +288,10 @@
      - 实现取消收藏操作
 
    - [ ] 17.9 搜索页 (SearchPage)
-     - 重构 `lib/presentation/pages/search/search_page.dart`
-     - 实现搜索输入框
-     - 实现搜索历史记录
-     - 实现搜索建议和联想
-     - 实现搜索结果列表
+      - 重构 `lib/presentation/pages/search/search_page.dart`
+      - 当前已具备搜索输入框 / 搜索历史 / 搜索结果列表
+      - 待拆分独立搜索建议与联想视图
+      - 待与探索页职责彻底解耦
 
    - [ ] 17.10 设置页 (SettingsPage)
      - 重构 `lib/presentation/pages/setting/setting_page.dart`

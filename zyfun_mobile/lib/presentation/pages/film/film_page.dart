@@ -40,13 +40,17 @@ class _FilmPageState extends ConsumerState<FilmPage> {
         : state.searchResults.isNotEmpty
             ? state.searchResults.first
             : null;
-    final continueWatching = state.searchResults.isNotEmpty
-        ? state.searchResults.take(4).toList()
-        : state.videos.skip(1).take(4).toList();
+    final spotlightVideos = state.videos.take(3).toList(growable: false);
+    final capabilityStats = <({String label, String value, String footnote})>[
+      (label: '多源聚合', value: '${state.sites.length}', footnote: '当前可切换站点'),
+      (label: '智能切换', value: '${state.categories.length}', footnote: '已加载分类'),
+      (label: '状态监控', value: '${state.videos.length}', footnote: '可展示内容条数'),
+      (label: '观看体验', value: 'HD', footnote: '优先流畅播放'),
+    ];
 
     return Scaffold(
       appBar: ZySearchAppBar(
-        placeholder: '搜索剧集、演员、导演',
+        placeholder: '搜索影视、演员、导演',
         onTap: () => context.push('/search'),
         actions: <Widget>[
           IconButton(
@@ -56,7 +60,7 @@ class _FilmPageState extends ConsumerState<FilmPage> {
           ),
           IconButton(
             tooltip: '刷新',
-            onPressed: () => notifier.loadSites(),
+            onPressed: notifier.loadSites,
             icon: const Icon(LucideIcons.refreshCw, size: AppIconSize.md),
           ),
         ],
@@ -71,40 +75,39 @@ class _FilmPageState extends ConsumerState<FilmPage> {
               sliver: SliverList(
                 delegate: SliverChildListDelegate(
                   <Widget>[
+                    const _BrandHeroSection(),
+                    const SizedBox(height: AppSpacing.lg),
+                    _CapabilityGrid(items: capabilityStats),
+                    const SizedBox(height: AppSpacing.lg),
                     if (state.errorMessage != null) ...<Widget>[
                       _ErrorBanner(message: state.errorMessage!),
                       const SizedBox(height: AppSpacing.lg),
                     ],
-                    _SiteSelectorSection(
+                    _SiteControlSection(
                       sites: state.sites,
                       selectedSite: state.selectedSite,
                       isLoading: state.isLoading,
                       onTap: notifier.selectSite,
                     ),
                     const SizedBox(height: AppSpacing.lg),
-                    _CategorySection(
+                    _CategoryTabSection(
                       categories: state.categories,
                       selectedCategoryId: state.selectedCategory?.id,
                       isLoading: state.isCategoryLoading,
                       onTap: notifier.loadVideosByCategory,
                     ),
                     const SizedBox(height: AppSpacing.lg),
-                    _HeroSection(
-                      featured: featured,
-                      selectedSite: state.selectedSite,
-                    ),
-                    const SizedBox(height: AppSpacing.lg),
-                    const _QuickActionsSection(),
-                    const SizedBox(height: AppSpacing.lg),
-                    _ContinueWatchingSection(videos: continueWatching),
-                    const SizedBox(height: AppSpacing.lg),
-                    _SourceStatusSection(
+                    _ToolDashboardSection(
                       selectedSite: state.selectedSite,
                       categoryCount: state.categories.length,
                       videoCount: state.videos.length,
                     ),
                     const SizedBox(height: AppSpacing.lg),
-                    _LatestResultSection(videos: state.videos),
+                    _SpotlightSection(featured: featured),
+                    const SizedBox(height: AppSpacing.lg),
+                    const _QuickActionPanel(),
+                    const SizedBox(height: AppSpacing.lg),
+                    _RankingPanel(videos: spotlightVideos),
                   ],
                 ),
               ),
@@ -113,6 +116,157 @@ class _FilmPageState extends ConsumerState<FilmPage> {
         ),
       ),
       bottomNavigationBar: const AppBottomNavBar(selectedIndex: 0),
+    );
+  }
+}
+
+class _BrandHeroSection extends StatelessWidget {
+  const _BrandHeroSection();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: AppSpacing.cardInsets,
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          colors: <Color>[Color(0xFF0F172A), Color(0xFF1D4ED8), Color(0xFF6366F1)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: AppRadius.largeCard,
+        boxShadow: AppShadows.lg,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          Row(
+            children: <Widget>[
+              Container(
+                width: 48,
+                height: 48,
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.16),
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                child: const Icon(
+                  LucideIcons.sparkles,
+                  color: Colors.white,
+                  size: AppIconSize.lg,
+                ),
+              ),
+              const SizedBox(width: AppSpacing.md),
+              const Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: <Widget>[
+                    Text(
+                      'ZyFun',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 24,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: -0.4,
+                      ),
+                    ),
+                    SizedBox(height: AppSpacing.xs),
+                    Text(
+                      '多源高清 · 智能切换',
+                      style: TextStyle(color: Color(0xFFE2E8F0), fontSize: 13),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: AppSpacing.lg),
+          const Text(
+            '聚合多源影视与线路状态，优先帮助你更快找到、切换并稳定播放。',
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: 15,
+              height: 1.5,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+          const SizedBox(height: AppSpacing.lg),
+          Row(
+            children: <Widget>[
+              Expanded(
+                child: _HeroTag(
+                  icon: LucideIcons.layers3,
+                  label: '多源聚合',
+                ),
+              ),
+              const SizedBox(width: AppSpacing.sm),
+              Expanded(
+                child: _HeroTag(
+                  icon: LucideIcons.activity,
+                  label: '状态感知',
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _HeroTag extends StatelessWidget {
+  const _HeroTag({required this.icon, required this.label});
+
+  final IconData icon;
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: AppSpacing.sm),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.12),
+        borderRadius: AppRadius.card,
+        border: Border.all(color: Colors.white.withValues(alpha: 0.16)),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: <Widget>[
+          Icon(icon, color: Colors.white, size: AppIconSize.sm),
+          const SizedBox(width: AppSpacing.sm),
+          Text(
+            label,
+            style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _CapabilityGrid extends StatelessWidget {
+  const _CapabilityGrid({required this.items});
+
+  final List<({String label, String value, String footnote})> items;
+
+  @override
+  Widget build(BuildContext context) {
+    return GridView.builder(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      itemCount: items.length,
+      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 2,
+        crossAxisSpacing: AppSpacing.md,
+        mainAxisSpacing: AppSpacing.md,
+        childAspectRatio: 1.35,
+      ),
+      itemBuilder: (context, index) {
+        final item = items[index];
+        return StatCard(
+          label: item.label,
+          value: item.value,
+          footnote: item.footnote,
+        );
+      },
     );
   }
 }
@@ -148,8 +302,8 @@ class _ErrorBanner extends StatelessWidget {
   }
 }
 
-class _SiteSelectorSection extends StatelessWidget {
-  const _SiteSelectorSection({
+class _SiteControlSection extends StatelessWidget {
+  const _SiteControlSection({
     required this.sites,
     required this.selectedSite,
     required this.isLoading,
@@ -166,11 +320,21 @@ class _SiteSelectorSection extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: <Widget>[
-        const PrimaryText('站点切换', style: AppTypography.h3),
+        Row(
+          children: <Widget>[
+            const PrimaryText('线路控制台', style: AppTypography.h3),
+            const Spacer(),
+            StatusChip(
+              label: selectedSite == null ? '未连接' : '已连接',
+              tone: selectedSite == null ? StatusChipTone.warning : StatusChipTone.success,
+            ),
+          ],
+        ),
         const SizedBox(height: AppSpacing.xs),
-        const SecondaryText('优先展示视觉层级，暂不考虑真实内容差异。'),
+        const SecondaryText('首页先突出线路选择与状态切换，而不是把内容流作为第一优先级。'),
         const SizedBox(height: AppSpacing.md),
         if (isLoading) const LinearProgressIndicator(),
+        const SizedBox(height: AppSpacing.sm),
         if (sites.isEmpty && !isLoading)
           const FunctionCard(
             title: '暂无站点',
@@ -179,92 +343,26 @@ class _SiteSelectorSection extends StatelessWidget {
             onTap: _noop,
           )
         else
-          SizedBox(
-            height: 88,
-            child: ListView.separated(
-              scrollDirection: Axis.horizontal,
-              itemBuilder: (context, index) {
-                final site = sites[index];
-                final selected = selectedSite?.id == site.id;
-                return _SitePillCard(
-                  site: site,
-                  selected: selected,
-                  onTap: () => onTap(site),
-                );
-              },
-              separatorBuilder: (_, __) => const SizedBox(width: AppSpacing.md),
-              itemCount: sites.length,
-            ),
+          Wrap(
+            spacing: AppSpacing.sm,
+            runSpacing: AppSpacing.sm,
+            children: sites
+                .map(
+                  (site) => AppChip(
+                    label: site.name,
+                    selected: selectedSite?.id == site.id,
+                    onTap: () => onTap(site),
+                  ),
+                )
+                .toList(),
           ),
       ],
     );
   }
 }
 
-class _SitePillCard extends StatelessWidget {
-  const _SitePillCard({
-    required this.site,
-    required this.selected,
-    required this.onTap,
-  });
-
-  final Site site;
-  final bool selected;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: AppRadius.card,
-        child: Ink(
-          width: 180,
-          padding: AppSpacing.cardInsets,
-          decoration: BoxDecoration(
-            color: selected
-                ? AppColors.primarySoft
-                : (isDark ? AppColors.surfaceDark : AppColors.surface),
-            borderRadius: AppRadius.card,
-            border: Border.all(
-              color: selected
-                  ? AppColors.primary
-                  : (isDark ? AppColors.borderDark : AppColors.border),
-            ),
-            boxShadow: isDark ? AppShadows.darkCard : AppShadows.sm,
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: <Widget>[
-              Row(
-                children: <Widget>[
-                  Expanded(
-                    child: PrimaryText(
-                      site.name,
-                      style: AppTypography.body.copyWith(fontWeight: FontWeight.w700),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ),
-                  if (selected)
-                    const Icon(LucideIcons.badgeCheck, color: AppColors.primary),
-                ],
-              ),
-              const SizedBox(height: AppSpacing.xs),
-              SecondaryText(site.typeName),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _CategorySection extends StatelessWidget {
-  const _CategorySection({
+class _CategoryTabSection extends StatelessWidget {
+  const _CategoryTabSection({
     required this.categories,
     required this.selectedCategoryId,
     required this.isLoading,
@@ -283,7 +381,7 @@ class _CategorySection extends StatelessWidget {
       children: <Widget>[
         Row(
           children: <Widget>[
-            const PrimaryText('分类导航', style: AppTypography.h3),
+            const PrimaryText('分类切换', style: AppTypography.h3),
             const Spacer(),
             if (isLoading)
               const SizedBox(
@@ -293,164 +391,30 @@ class _CategorySection extends StatelessWidget {
               ),
           ],
         ),
-        const SizedBox(height: AppSpacing.sm),
-        if (categories.isEmpty)
-          const SecondaryText('当前站点暂无分类')
-        else
-          Wrap(
-            spacing: AppSpacing.sm,
-            runSpacing: AppSpacing.sm,
-            children: categories
-                .map(
-                  (category) => CategoryChip(
-                    label: category.name,
-                    selected: selectedCategoryId == category.id,
-                    onTap: () => onTap(category.id),
-                  ),
-                )
-                .toList(),
-          ),
-      ],
-    );
-  }
-}
-
-class _HeroSection extends StatelessWidget {
-  const _HeroSection({required this.featured, required this.selectedSite});
-
-  final Video? featured;
-  final Site? selectedSite;
-
-  @override
-  Widget build(BuildContext context) {
-    if (featured == null) {
-      return const FunctionCard(
-        title: '推荐内容加载中',
-        description: '当前尚未拿到演示内容，稍后会自动补齐推荐区域。',
-        icon: LucideIcons.loaderCircle,
-        onTap: _noop,
-      );
-    }
-
-    final item = featured!;
-
-    return HeroBannerCard(
-      title: item.title,
-      description: item.description ?? '当前由演示数据生成的推荐大卡位。',
-      imageUrl: item.cover,
-      badge: selectedSite?.name ?? '今日推荐',
-      onTap: () {
-        context.push(
-          Uri(
-            path: '/detail/${item.id}',
-            queryParameters: <String, String>{
-              'siteId': item.siteId,
-              'title': item.title,
-            },
-          ).toString(),
-        );
-      },
-    );
-  }
-}
-
-class _QuickActionsSection extends StatelessWidget {
-  const _QuickActionsSection();
-
-  @override
-  Widget build(BuildContext context) {
-    const items = <({String title, IconData icon, String route})>[
-      (title: '电视剧', icon: LucideIcons.tv2, route: '/film'),
-      (title: '电影', icon: LucideIcons.clapperboard, route: '/film'),
-      (title: '综艺', icon: LucideIcons.mic2, route: '/film'),
-      (title: '动漫', icon: LucideIcons.sparkles, route: '/film'),
-      (title: '纪录片', icon: LucideIcons.earth, route: '/film'),
-    ];
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: <Widget>[
-        const PrimaryText('快捷入口', style: AppTypography.h3),
         const SizedBox(height: AppSpacing.md),
-        Row(
-          children: List<Widget>.generate(items.length, (index) {
-            final item = items[index];
-            final gradient = AppColors.quickActionGradients[index];
-            return Expanded(
-              child: GestureDetector(
-                onTap: () => context.push(item.route),
-                child: Padding(
-                  padding: EdgeInsets.only(
-                    right: index == items.length - 1 ? 0 : AppSpacing.sm,
-                  ),
-                  child: Column(
-                    children: <Widget>[
-                      Container(
-                        width: 56,
-                        height: 56,
-                        decoration: BoxDecoration(
-                          gradient: gradient,
-                          shape: BoxShape.circle,
-                          boxShadow: AppShadows.sm,
-                        ),
-                        child: Icon(item.icon, color: Colors.white, size: AppIconSize.lg),
-                      ),
-                      const SizedBox(height: AppSpacing.sm),
-                      Text(
-                        item.title,
-                        style: AppTypography.caption.copyWith(fontWeight: FontWeight.w600),
-                        textAlign: TextAlign.center,
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            );
-          }),
+        SizedBox(
+          height: 40,
+          child: ListView.separated(
+            scrollDirection: Axis.horizontal,
+            itemCount: categories.length,
+            separatorBuilder: (_, __) => const SizedBox(width: AppSpacing.sm),
+            itemBuilder: (context, index) {
+              final category = categories[index];
+              return CategoryChip(
+                label: category.name,
+                selected: selectedCategoryId == category.id,
+                onTap: () => onTap(category.id),
+              );
+            },
+          ),
         ),
       ],
     );
   }
 }
 
-class _ContinueWatchingSection extends StatelessWidget {
-  const _ContinueWatchingSection({required this.videos});
-
-  final List<Video> videos;
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: <Widget>[
-        const PrimaryText('继续观看', style: AppTypography.h3),
-        const SizedBox(height: AppSpacing.xs),
-        const SecondaryText('先用已有演示数据模拟最近继续观看区域。'),
-        const SizedBox(height: AppSpacing.md),
-        if (videos.isEmpty)
-          const SecondaryText('暂无继续观看内容')
-        else
-          SizedBox(
-            height: 332,
-            child: ListView.separated(
-              scrollDirection: Axis.horizontal,
-              itemCount: videos.length,
-              separatorBuilder: (_, __) => const SizedBox(width: AppSpacing.md),
-              itemBuilder: (context, index) {
-                return SizedBox(
-                  width: 240,
-                  child: VideoCard(video: videos[index]),
-                );
-              },
-            ),
-          ),
-      ],
-    );
-  }
-}
-
-class _SourceStatusSection extends StatelessWidget {
-  const _SourceStatusSection({
+class _ToolDashboardSection extends StatelessWidget {
+  const _ToolDashboardSection({
     required this.selectedSite,
     required this.categoryCount,
     required this.videoCount,
@@ -462,29 +426,187 @@ class _SourceStatusSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final sourceName = selectedSite?.name ?? '未选择站点';
-    final statuses = <({String title, String value, StatusChipTone tone})>[
-      (title: '当前线路', value: sourceName, tone: StatusChipTone.info),
-      (title: '分类数量', value: '$categoryCount 个', tone: StatusChipTone.success),
-      (title: '内容数量', value: '$videoCount 条', tone: StatusChipTone.warning),
+    final cards = <({String title, String value, String description, StatusChipTone tone})>[
+      (
+        title: '当前线路',
+        value: selectedSite?.name ?? '未选择',
+        description: '默认进入站点',
+        tone: StatusChipTone.info,
+      ),
+      (
+        title: '源状态监控',
+        value: categoryCount > 0 ? '正常' : '待加载',
+        description: '$categoryCount 个分类已同步',
+        tone: categoryCount > 0 ? StatusChipTone.success : StatusChipTone.warning,
+      ),
+      (
+        title: '资源索引',
+        value: '$videoCount',
+        description: '当前可视内容条数',
+        tone: StatusChipTone.warning,
+      ),
     ];
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: <Widget>[
-        const PrimaryText('源状态监控', style: AppTypography.h3),
+        const PrimaryText('首页监控面板', style: AppTypography.h3),
         const SizedBox(height: AppSpacing.xs),
-        const SecondaryText('突出设计稿中的工具属性，先以本地状态做可视化展示。'),
+        const SecondaryText('这一区在设计上更像源状态与能力总览，而不是普通推荐列表。'),
         const SizedBox(height: AppSpacing.md),
         Column(
-          children: statuses
+          children: cards
               .map(
-                (status) => Padding(
+                (item) => Padding(
                   padding: const EdgeInsets.only(bottom: AppSpacing.md),
-                  child: _StatusRow(
-                    title: status.title,
-                    value: status.value,
-                    tone: status.tone,
+                  child: _DashboardCard(item: item),
+                ),
+              )
+              .toList(),
+        ),
+      ],
+    );
+  }
+}
+
+class _DashboardCard extends StatelessWidget {
+  const _DashboardCard({required this.item});
+
+  final ({String title, String value, String description, StatusChipTone tone}) item;
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return Container(
+      padding: AppSpacing.cardInsets,
+      decoration: BoxDecoration(
+        color: isDark ? AppColors.surfaceDark : AppColors.surface,
+        borderRadius: AppRadius.card,
+        border: Border.all(color: isDark ? AppColors.borderDark : AppColors.border),
+        boxShadow: isDark ? AppShadows.darkCard : AppShadows.sm,
+      ),
+      child: Row(
+        children: <Widget>[
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
+                SecondaryText(item.title),
+                const SizedBox(height: AppSpacing.xs),
+                PrimaryText(
+                  item.value,
+                  style: AppTypography.h3,
+                ),
+                const SizedBox(height: AppSpacing.xs),
+                CaptionText(item.description),
+              ],
+            ),
+          ),
+          StatusChip(label: _toneLabel(item.tone), tone: item.tone),
+        ],
+      ),
+    );
+  }
+
+  String _toneLabel(StatusChipTone tone) {
+    switch (tone) {
+      case StatusChipTone.success:
+        return '正常';
+      case StatusChipTone.warning:
+        return '监控';
+      case StatusChipTone.danger:
+        return '异常';
+      case StatusChipTone.info:
+        return '已选';
+    }
+  }
+}
+
+class _SpotlightSection extends StatelessWidget {
+  const _SpotlightSection({required this.featured});
+
+  final Video? featured;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: <Widget>[
+        const PrimaryText('今日推荐', style: AppTypography.h3),
+        const SizedBox(height: AppSpacing.xs),
+        const SecondaryText('内容区保留，但退到工具型首页的第二层级。'),
+        const SizedBox(height: AppSpacing.md),
+        if (featured == null)
+          const FunctionCard(
+            title: '推荐内容加载中',
+            description: '当前尚未拿到演示内容，稍后会自动补齐推荐区域。',
+            icon: LucideIcons.loaderCircle,
+            onTap: _noop,
+          )
+        else
+          HeroBannerCard(
+            title: featured!.title,
+            description: featured!.description ?? '当前由演示数据生成的推荐大卡位。',
+            imageUrl: featured!.cover,
+            badge: featured!.type ?? '推荐',
+            onTap: () {
+              context.push(
+                Uri(
+                  path: '/detail/${featured!.id}',
+                  queryParameters: <String, String>{
+                    'siteId': featured!.siteId,
+                    'title': featured!.title,
+                  },
+                ).toString(),
+              );
+            },
+          ),
+      ],
+    );
+  }
+}
+
+class _QuickActionPanel extends StatelessWidget {
+  const _QuickActionPanel();
+
+  @override
+  Widget build(BuildContext context) {
+    const actions = <({String title, String subtitle, IconData icon, String route})>[
+      (
+        title: '快速探索',
+        subtitle: '切换分类与榜单',
+        icon: LucideIcons.compass,
+        route: '/search',
+      ),
+      (
+        title: '直播入口',
+        subtitle: '查看频道与节目单',
+        icon: LucideIcons.tv,
+        route: '/live',
+      ),
+      (
+        title: '历史记录',
+        subtitle: '继续上次播放',
+        icon: LucideIcons.history,
+        route: '/history',
+      ),
+    ];
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: <Widget>[
+        const PrimaryText('核心入口', style: AppTypography.h3),
+        const SizedBox(height: AppSpacing.md),
+        Column(
+          children: actions
+              .map(
+                (action) => Padding(
+                  padding: const EdgeInsets.only(bottom: AppSpacing.md),
+                  child: FunctionCard(
+                    title: action.title,
+                    description: action.subtitle,
+                    icon: action.icon,
+                    onTap: () => context.push(action.route),
                   ),
                 ),
               )
@@ -495,64 +617,8 @@ class _SourceStatusSection extends StatelessWidget {
   }
 }
 
-class _StatusRow extends StatelessWidget {
-  const _StatusRow({
-    required this.title,
-    required this.value,
-    required this.tone,
-  });
-
-  final String title;
-  final String value;
-  final StatusChipTone tone;
-
-  @override
-  Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    return Container(
-      padding: AppSpacing.cardInsets,
-      decoration: BoxDecoration(
-        color: isDark ? AppColors.surfaceDark : AppColors.surface,
-        borderRadius: AppRadius.card,
-        border: Border.all(
-          color: isDark ? AppColors.borderDark : AppColors.border,
-        ),
-        boxShadow: isDark ? AppShadows.darkCard : AppShadows.sm,
-      ),
-      child: Row(
-        children: <Widget>[
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: <Widget>[
-                PrimaryText(title, style: AppTypography.body.copyWith(fontWeight: FontWeight.w600)),
-                const SizedBox(height: AppSpacing.xs),
-                SecondaryText(value),
-              ],
-            ),
-          ),
-          StatusChip(label: _statusLabel(tone), tone: tone),
-        ],
-      ),
-    );
-  }
-
-  String _statusLabel(StatusChipTone tone) {
-    switch (tone) {
-      case StatusChipTone.success:
-        return '正常';
-      case StatusChipTone.warning:
-        return '活跃';
-      case StatusChipTone.danger:
-        return '异常';
-      case StatusChipTone.info:
-        return '已选';
-    }
-  }
-}
-
-class _LatestResultSection extends StatelessWidget {
-  const _LatestResultSection({required this.videos});
+class _RankingPanel extends StatelessWidget {
+  const _RankingPanel({required this.videos});
 
   final List<Video> videos;
 
@@ -563,10 +629,10 @@ class _LatestResultSection extends StatelessWidget {
       children: <Widget>[
         Row(
           children: <Widget>[
-            const PrimaryText('最近更新', style: AppTypography.h3),
+            const PrimaryText('热门榜单', style: AppTypography.h3),
             const Spacer(),
             LinkActionButton(
-              label: '查看更多',
+              label: '全部',
               size: AppButtonSize.small,
               onPressed: () => context.push('/search'),
             ),
@@ -574,20 +640,95 @@ class _LatestResultSection extends StatelessWidget {
         ),
         const SizedBox(height: AppSpacing.md),
         if (videos.isEmpty)
-          const SecondaryText('暂无更新内容')
+          const SecondaryText('暂无榜单数据')
         else
           Column(
-            children: videos
-                .take(4)
-                .map(
-                  (video) => Padding(
-                    padding: const EdgeInsets.only(bottom: AppSpacing.md),
-                    child: VideoCard(video: video),
-                  ),
-                )
-                .toList(),
+            children: List<Widget>.generate(videos.length, (index) {
+              final video = videos[index];
+              return Padding(
+                padding: const EdgeInsets.only(bottom: AppSpacing.md),
+                child: _RankingRow(rank: index + 1, video: video),
+              );
+            }),
           ),
       ],
+    );
+  }
+}
+
+class _RankingRow extends StatelessWidget {
+  const _RankingRow({required this.rank, required this.video});
+
+  final int rank;
+  final Video video;
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        borderRadius: AppRadius.card,
+        onTap: () {
+          context.push(
+            Uri(
+              path: '/detail/${video.id}',
+              queryParameters: <String, String>{
+                'siteId': video.siteId,
+                'title': video.title,
+              },
+            ).toString(),
+          );
+        },
+        child: Ink(
+          padding: AppSpacing.cardInsets,
+          decoration: BoxDecoration(
+            color: isDark ? AppColors.surfaceDark : AppColors.surface,
+            borderRadius: AppRadius.card,
+            border: Border.all(color: isDark ? AppColors.borderDark : AppColors.border),
+            boxShadow: isDark ? AppShadows.darkCard : AppShadows.sm,
+          ),
+          child: Row(
+            children: <Widget>[
+              Container(
+                width: 32,
+                height: 32,
+                decoration: BoxDecoration(
+                  gradient: AppColors.quickActionGradients[(rank - 1) % AppColors.quickActionGradients.length],
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                alignment: Alignment.center,
+                child: Text(
+                  '$rank',
+                  style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w700),
+                ),
+              ),
+              const SizedBox(width: AppSpacing.md),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: <Widget>[
+                    PrimaryText(
+                      video.title,
+                      style: AppTypography.body.copyWith(fontWeight: FontWeight.w700),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: AppSpacing.xs),
+                    SecondaryText(
+                      video.description ?? video.actor ?? '热门资源推荐',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: AppSpacing.md),
+              StatusChip(label: video.type ?? '影视', tone: StatusChipTone.info),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }

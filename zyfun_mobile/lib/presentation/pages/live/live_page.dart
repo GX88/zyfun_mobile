@@ -9,6 +9,10 @@ import '../../../core/constants/constants.dart';
 import '../../../data/models/iptv.dart';
 import '../../components/app_bottom_nav_bar.dart';
 import '../../components/app_bar.dart';
+import '../../components/buttons/app_buttons.dart';
+import '../../components/cards/app_cards.dart';
+import '../../components/chips/app_chips.dart';
+import '../../components/texts.dart';
 import '../../providers/app_providers.dart';
 import '../../providers/iptv_provider.dart';
 
@@ -34,7 +38,6 @@ class _LivePageState extends ConsumerState<LivePage> {
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(iptvNotifierProvider);
-    final theme = ShadTheme.of(context);
     final groupedChannels = _groupChannels(state.channels);
     final availableGroups = groupedChannels.keys.toList()..sort();
     final currentGroup = _resolveCurrentGroup(availableGroups);
@@ -57,187 +60,48 @@ class _LivePageState extends ConsumerState<LivePage> {
       body: RefreshIndicator(
         onRefresh: () => ref.read(iptvNotifierProvider.notifier).loadIptvs(),
         child: ListView(
-          padding: const EdgeInsets.all(16),
+          padding: AppSpacing.pageInsets,
           children: <Widget>[
-            const NavigationMenuCard(
-              title: '快捷入口',
-              description: '在直播能力补齐前，先提供常用页面跳转。',
-              items: <NavigationMenuItem>[
-                NavigationMenuItem(
-                  label: '影视首页',
-                  route: '/film',
-                  icon: LucideIcons.clapperboard,
-                ),
-                NavigationMenuItem(
-                  label: '解析配置',
-                  route: '/parse',
-                  icon: LucideIcons.sparkles,
-                ),
-                NavigationMenuItem(
-                  label: '应用设置',
-                  route: '/setting',
-                  icon: LucideIcons.settings2,
-                ),
-              ],
+            _LiveSourceHeader(
+              iptvs: state.iptvs,
+              selectedIptvId: state.selectedIptv?.id,
+              isLoading: state.isLoading,
+              errorMessage: state.errorMessage,
+              onTapIptv: (iptv) => ref.read(iptvNotifierProvider.notifier).selectIptv(iptv),
             ),
-            const SizedBox(height: 16),
-            ShadCard(
-              title: Text('直播源', style: theme.textTheme.h4),
-              description: const Text('当前接入 M3U 频道列表与默认直播源选择。'),
-              child: Padding(
-                padding: const EdgeInsets.only(top: 16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: <Widget>[
-                    if (state.isLoading) const LinearProgressIndicator(),
-                    if (state.errorMessage != null) ...<Widget>[
-                      Text(
-                        state.errorMessage!,
-                        style: theme.textTheme.small.copyWith(
-                          color: theme.colorScheme.destructive,
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-                    ],
-                    ...state.iptvs.map(
-                      (iptv) => Padding(
-                        padding: const EdgeInsets.only(bottom: 12),
-                        child: _IptvTile(
-                          iptv: iptv,
-                          selected: state.selectedIptv?.id == iptv.id,
-                          onTap: () => ref
-                              .read(iptvNotifierProvider.notifier)
-                              .selectIptv(iptv),
-                        ),
-                      ),
+            const SizedBox(height: AppSpacing.lg),
+            SizedBox(
+              height: 560,
+              child: Row(
+                children: <Widget>[
+                  _ChannelGroupSidebar(
+                    groups: availableGroups,
+                    selectedGroup: currentGroup,
+                    onSelected: (group) => setState(() => _selectedGroup = group),
+                  ),
+                  const SizedBox(width: AppSpacing.md),
+                  Expanded(
+                    child: _LiveContentPanel(
+                      selectedIptv: state.selectedIptv,
+                      currentChannel: currentChannel,
+                      visibleChannels: visibleChannels,
+                      isChannelLoading: state.isChannelLoading,
+                      onSelectChannel: (channel) => ref
+                          .read(iptvNotifierProvider.notifier)
+                          .selectChannel(channel),
+                      onPlayChannel: _playChannel,
+                      onWatchReplay: _watchReplay,
+                      buildProgramTimeline: _buildProgramTimeline,
                     ),
-                  ],
-                ),
+                  ),
+                ],
               ),
             ),
-            const SizedBox(height: 16),
-            ShadCard(
-              title: Text('当前播放', style: theme.textTheme.h4),
-              description: Text(
-                currentChannel == null
-                    ? '请选择频道开始播放。'
-                    : '当前频道：${currentChannel.name}',
-              ),
-              child: Padding(
-                padding: const EdgeInsets.only(top: 16),
-                child: currentChannel == null
-                    ? Text('暂无已选频道', style: theme.textTheme.muted)
-                    : Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: <Widget>[
-                          _ChannelTile(
-                            channel: currentChannel,
-                            selected: true,
-                            onTap: () => ref
-                                .read(iptvNotifierProvider.notifier)
-                                .selectChannel(currentChannel),
-                            action: ShadButton(
-                              onPressed: () => _playChannel(currentChannel),
-                              child: const Text('立即播放'),
-                            ),
-                          ),
-                          const SizedBox(height: 12),
-                          Row(
-                            children: <Widget>[
-                              Expanded(
-                                child: ShadButton.outline(
-                                  onPressed: () => _playChannel(currentChannel),
-                                  child: const Text('播放直播'),
-                                ),
-                              ),
-                              const SizedBox(width: 12),
-                              Expanded(
-                                child: ShadButton.secondary(
-                                  onPressed: () => _watchReplay(currentChannel),
-                                  child: const Text('回看入口'),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
-              ),
-            ),
-            const SizedBox(height: 16),
-            ShadCard(
-              title: Text('节目单', style: theme.textTheme.h4),
-              description: Text(
-                state.selectedIptv?.epg?.isNotEmpty == true
-                    ? '已配置 EPG 地址，当前页面先展示基础节目单视图。'
-                    : '当前直播源未配置 EPG，先展示默认节目流。',
-              ),
-              child: Padding(
-                padding: const EdgeInsets.only(top: 16),
-                child: currentChannel == null
-                    ? Text('选择频道后可查看节目安排', style: theme.textTheme.muted)
-                    : Column(
-                        children: _buildProgramTimeline(currentChannel)
-                            .map(
-                              (program) => Padding(
-                                padding: const EdgeInsets.only(bottom: 12),
-                                child: _ProgramTile(program: program),
-                              ),
-                            )
-                            .toList(),
-                      ),
-              ),
-            ),
-            const SizedBox(height: 16),
-            ShadCard(
-              title: Text('频道列表', style: theme.textTheme.h4),
-              description: Text(
-                state.selectedIptv == null
-                    ? '请选择直播源后查看频道。'
-                    : '当前源：${state.selectedIptv!.name}，支持频道切换和分组浏览。',
-              ),
-              child: Padding(
-                padding: const EdgeInsets.only(top: 16),
-                child: state.isChannelLoading
-                    ? const LinearProgressIndicator()
-                    : state.channels.isEmpty
-                        ? Text('暂无频道数据', style: theme.textTheme.muted)
-                        : Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: <Widget>[
-                              if (availableGroups.isNotEmpty) ...<Widget>[
-                                Wrap(
-                                  spacing: 8,
-                                  runSpacing: 8,
-                                  children: availableGroups
-                                      .map(
-                                        (group) => ShadButton.outline(
-                                          onPressed: () => setState(() => _selectedGroup = group),
-                                          child: Text(group),
-                                        ),
-                                      )
-                                      .toList(),
-                                ),
-                                const SizedBox(height: 16),
-                              ],
-                              ...visibleChannels.take(30).map(
-                                (channel) => Padding(
-                                  padding: const EdgeInsets.only(bottom: 12),
-                                  child: _ChannelTile(
-                                    channel: channel,
-                                    selected: currentChannel?.id == channel.id,
-                                    onTap: () => ref
-                                        .read(iptvNotifierProvider.notifier)
-                                        .selectChannel(channel),
-                                    action: ShadButton.outline(
-                                      onPressed: () => _playChannel(channel),
-                                      child: const Text('播放'),
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-              ),
+            const SizedBox(height: AppSpacing.lg),
+            _MiniPlayerBar(
+              channel: currentChannel,
+              onPlay: currentChannel == null ? null : () => _playChannel(currentChannel),
+              onReplay: currentChannel == null ? null : () => _watchReplay(currentChannel),
             ),
           ],
         ),
@@ -336,6 +200,511 @@ class _LivePageState extends ConsumerState<LivePage> {
   String get stateSiteId => ref.read(iptvNotifierProvider).selectedIptv?.id ?? 'live';
 }
 
+class _LiveSourceHeader extends StatelessWidget {
+  const _LiveSourceHeader({
+    required this.iptvs,
+    required this.selectedIptvId,
+    required this.isLoading,
+    required this.errorMessage,
+    required this.onTapIptv,
+  });
+
+  final List<Iptv> iptvs;
+  final String? selectedIptvId;
+  final bool isLoading;
+  final String? errorMessage;
+  final ValueChanged<Iptv> onTapIptv;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: <Widget>[
+        Row(
+          children: <Widget>[
+            const PrimaryText('直播源切换', style: AppTypography.h3),
+            const Spacer(),
+            StatusChip(
+              label: isLoading ? '刷新中' : '在线',
+              tone: isLoading ? StatusChipTone.warning : StatusChipTone.success,
+            ),
+          ],
+        ),
+        const SizedBox(height: AppSpacing.xs),
+        const SecondaryText('优先重构频道浏览与当前播放结构，直播源能力继续复用现有数据层。'),
+        const SizedBox(height: AppSpacing.md),
+        if (isLoading) const LinearProgressIndicator(),
+        if (errorMessage != null) ...<Widget>[
+          const SizedBox(height: AppSpacing.sm),
+          _LiveErrorBanner(message: errorMessage!),
+        ],
+        const SizedBox(height: AppSpacing.md),
+        if (iptvs.isEmpty)
+          const FunctionCard(
+            title: '暂无直播源',
+            description: '当前没有可切换的直播源，下拉刷新后重试。',
+            icon: LucideIcons.radioTower,
+            onTap: _noop,
+          )
+        else
+          SizedBox(
+            height: 92,
+            child: ListView.separated(
+              scrollDirection: Axis.horizontal,
+              itemCount: iptvs.length,
+              separatorBuilder: (_, __) => const SizedBox(width: AppSpacing.md),
+              itemBuilder: (context, index) {
+                final iptv = iptvs[index];
+                return _IptvTile(
+                  iptv: iptv,
+                  selected: selectedIptvId == iptv.id,
+                  onTap: () => onTapIptv(iptv),
+                );
+              },
+            ),
+          ),
+      ],
+    );
+  }
+}
+
+class _ChannelGroupSidebar extends StatelessWidget {
+  const _ChannelGroupSidebar({
+    required this.groups,
+    required this.selectedGroup,
+    required this.onSelected,
+  });
+
+  final List<String> groups;
+  final String? selectedGroup;
+  final ValueChanged<String> onSelected;
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return Container(
+      width: 100,
+      decoration: BoxDecoration(
+        color: isDark ? AppColors.surfaceDark : AppColors.surface,
+        borderRadius: AppRadius.card,
+        border: Border.all(
+          color: isDark ? AppColors.borderDark : AppColors.border,
+        ),
+        boxShadow: isDark ? AppShadows.darkCard : AppShadows.sm,
+      ),
+      child: groups.isEmpty
+          ? const Center(
+              child: Padding(
+                padding: EdgeInsets.all(AppSpacing.md),
+                child: SecondaryText('暂无分组'),
+              ),
+            )
+          : ListView.separated(
+              padding: const EdgeInsets.all(AppSpacing.sm),
+              itemCount: groups.length,
+              separatorBuilder: (_, __) => const SizedBox(height: AppSpacing.sm),
+              itemBuilder: (context, index) {
+                final group = groups[index];
+                final selected = group == selectedGroup;
+                return _SidebarGroupItem(
+                  label: group,
+                  selected: selected,
+                  onTap: () => onSelected(group),
+                );
+              },
+            ),
+    );
+  }
+}
+
+class _SidebarGroupItem extends StatelessWidget {
+  const _SidebarGroupItem({
+    required this.label,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final String label;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        borderRadius: AppRadius.card,
+        onTap: onTap,
+        child: Ink(
+          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm, vertical: AppSpacing.md),
+          decoration: BoxDecoration(
+            color: selected
+                ? AppColors.primarySoft
+                : (isDark ? AppColors.surfaceSubtleDark : AppColors.surfaceSubtle),
+            borderRadius: AppRadius.card,
+            border: Border.all(
+              color: selected
+                  ? AppColors.primary
+                  : (isDark ? AppColors.borderDark : AppColors.border),
+            ),
+          ),
+          child: Text(
+            label,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+            textAlign: TextAlign.center,
+            style: AppTypography.bodySmall.copyWith(
+              color: selected
+                  ? AppColors.primary
+                  : (isDark ? AppColors.textPrimaryDark : AppColors.textPrimary),
+              fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _LiveContentPanel extends StatelessWidget {
+  const _LiveContentPanel({
+    required this.selectedIptv,
+    required this.currentChannel,
+    required this.visibleChannels,
+    required this.isChannelLoading,
+    required this.onSelectChannel,
+    required this.onPlayChannel,
+    required this.onWatchReplay,
+    required this.buildProgramTimeline,
+  });
+
+  final Iptv? selectedIptv;
+  final Channel? currentChannel;
+  final List<Channel> visibleChannels;
+  final bool isChannelLoading;
+  final ValueChanged<Channel> onSelectChannel;
+  final ValueChanged<Channel> onPlayChannel;
+  final ValueChanged<Channel> onWatchReplay;
+  final List<_ProgramItem> Function(Channel channel) buildProgramTimeline;
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final channel = currentChannel;
+    return Container(
+      decoration: BoxDecoration(
+        color: isDark ? AppColors.surfaceDark : AppColors.surface,
+        borderRadius: AppRadius.card,
+        border: Border.all(
+          color: isDark ? AppColors.borderDark : AppColors.border,
+        ),
+        boxShadow: isDark ? AppShadows.darkCard : AppShadows.sm,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          Padding(
+            padding: AppSpacing.cardInsets,
+            child: _CurrentLiveHero(
+              selectedIptv: selectedIptv,
+              currentChannel: currentChannel,
+              onPlay: channel == null ? null : () => onPlayChannel(channel),
+              onReplay: channel == null ? null : () => onWatchReplay(channel),
+            ),
+          ),
+          const Padding(
+            padding: EdgeInsets.symmetric(horizontal: AppSpacing.md),
+            child: Divider(height: 1),
+          ),
+          Expanded(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(
+                AppSpacing.md,
+                AppSpacing.md,
+                AppSpacing.md,
+                AppSpacing.md,
+              ),
+              child: Row(
+                children: <Widget>[
+                  Expanded(
+                    flex: 3,
+                    child: _ChannelListSection(
+                      channels: visibleChannels,
+                      currentChannelId: currentChannel?.id,
+                      isChannelLoading: isChannelLoading,
+                      onSelectChannel: onSelectChannel,
+                      onPlayChannel: onPlayChannel,
+                    ),
+                  ),
+                  const SizedBox(width: AppSpacing.md),
+                  Expanded(
+                    flex: 2,
+                    child: _ProgramPanel(
+                      currentChannel: currentChannel,
+                      programItems: channel == null
+                          ? const <_ProgramItem>[]
+                          : buildProgramTimeline(channel),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _CurrentLiveHero extends StatelessWidget {
+  const _CurrentLiveHero({
+    required this.selectedIptv,
+    required this.currentChannel,
+    required this.onPlay,
+    required this.onReplay,
+  });
+
+  final Iptv? selectedIptv;
+  final Channel? currentChannel;
+  final VoidCallback? onPlay;
+  final VoidCallback? onReplay;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: <Widget>[
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: <Widget>[
+              const PrimaryText('当前播放', style: AppTypography.h3),
+              const SizedBox(height: AppSpacing.xs),
+              SecondaryText(selectedIptv?.name ?? '未选择直播源'),
+              const SizedBox(height: AppSpacing.md),
+              PrimaryText(
+                currentChannel?.name ?? '请选择频道开始播放',
+                style: AppTypography.h2,
+              ),
+              const SizedBox(height: AppSpacing.xs),
+              SecondaryText(currentChannel?.group ?? '频道分组将显示在这里'),
+            ],
+          ),
+        ),
+        const SizedBox(width: AppSpacing.md),
+        Column(
+          children: <Widget>[
+            PrimaryButton(
+              label: '播放直播',
+              size: AppButtonSize.small,
+              onPressed: onPlay,
+            ),
+            const SizedBox(height: AppSpacing.sm),
+            SecondaryButton(
+              label: '回看入口',
+              size: AppButtonSize.small,
+              onPressed: onReplay,
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+}
+
+class _ChannelListSection extends StatelessWidget {
+  const _ChannelListSection({
+    required this.channels,
+    required this.currentChannelId,
+    required this.isChannelLoading,
+    required this.onSelectChannel,
+    required this.onPlayChannel,
+  });
+
+  final List<Channel> channels;
+  final String? currentChannelId;
+  final bool isChannelLoading;
+  final ValueChanged<Channel> onSelectChannel;
+  final ValueChanged<Channel> onPlayChannel;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: <Widget>[
+        Row(
+          children: <Widget>[
+            const PrimaryText('频道列表', style: AppTypography.h3),
+            const Spacer(),
+            if (isChannelLoading)
+              const SizedBox(
+                width: AppIconSize.sm,
+                height: AppIconSize.sm,
+                child: CircularProgressIndicator(strokeWidth: 2),
+              ),
+          ],
+        ),
+        const SizedBox(height: AppSpacing.sm),
+        Expanded(
+          child: channels.isEmpty
+              ? const Center(child: SecondaryText('暂无频道数据'))
+              : ListView.separated(
+                  itemCount: channels.length,
+                  separatorBuilder: (_, __) => const SizedBox(height: AppSpacing.sm),
+                  itemBuilder: (context, index) {
+                    final channel = channels[index];
+                    return _ChannelTile(
+                      channel: channel,
+                      selected: currentChannelId == channel.id,
+                      onTap: () => onSelectChannel(channel),
+                      action: OutlineActionButton(
+                        label: '播放',
+                        size: AppButtonSize.small,
+                        onPressed: () => onPlayChannel(channel),
+                      ),
+                    );
+                  },
+                ),
+        ),
+      ],
+    );
+  }
+}
+
+class _ProgramPanel extends StatelessWidget {
+  const _ProgramPanel({
+    required this.currentChannel,
+    required this.programItems,
+  });
+
+  final Channel? currentChannel;
+  final List<_ProgramItem> programItems;
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return Container(
+      padding: AppSpacing.cardInsets,
+      decoration: BoxDecoration(
+        color: isDark ? AppColors.surfaceSubtleDark : AppColors.surfaceSubtle,
+        borderRadius: AppRadius.card,
+        border: Border.all(
+          color: isDark ? AppColors.borderDark : AppColors.border,
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          const PrimaryText('节目单', style: AppTypography.h3),
+          const SizedBox(height: AppSpacing.xs),
+          SecondaryText(
+            currentChannel == null
+                ? '选择频道后查看当前节目安排'
+                : '${currentChannel!.name} 的基础节目流',
+          ),
+          const SizedBox(height: AppSpacing.md),
+          Expanded(
+            child: programItems.isEmpty
+                ? const Center(child: SecondaryText('暂无节目安排'))
+                : ListView.separated(
+                    itemCount: programItems.length,
+                    separatorBuilder: (_, __) => const SizedBox(height: AppSpacing.md),
+                    itemBuilder: (context, index) => _ProgramTile(program: programItems[index]),
+                  ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _MiniPlayerBar extends StatelessWidget {
+  const _MiniPlayerBar({
+    required this.channel,
+    required this.onPlay,
+    required this.onReplay,
+  });
+
+  final Channel? channel;
+  final VoidCallback? onPlay;
+  final VoidCallback? onReplay;
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return Container(
+      padding: AppSpacing.cardInsets,
+      decoration: BoxDecoration(
+        gradient: AppColors.primaryGradient,
+        borderRadius: AppRadius.card,
+        boxShadow: isDark ? AppShadows.darkCard : AppShadows.floating,
+      ),
+      child: Row(
+        children: <Widget>[
+          const Icon(LucideIcons.radio, color: Colors.white, size: AppIconSize.lg),
+          const SizedBox(width: AppSpacing.md),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
+                Text(
+                  channel?.name ?? '未选择频道',
+                  style: AppTypography.body.copyWith(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w700,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                const SizedBox(height: AppSpacing.xs),
+                Text(
+                  channel?.group ?? '底部迷你播放器已就位',
+                  style: AppTypography.caption.copyWith(color: const Color(0xFFE2E8F0)),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: AppSpacing.md),
+          OutlineActionButton(
+            label: '回看',
+            size: AppButtonSize.small,
+            onPressed: onReplay,
+          ),
+          const SizedBox(width: AppSpacing.sm),
+          PrimaryButton(
+            label: '播放',
+            size: AppButtonSize.small,
+            onPressed: onPlay,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _LiveErrorBanner extends StatelessWidget {
+  const _LiveErrorBanner({required this.message});
+
+  final String message;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: AppSpacing.cardInsets,
+      decoration: BoxDecoration(
+        color: AppColors.errorSoft,
+        borderRadius: AppRadius.card,
+        border: Border.all(color: const Color(0xFFFCA5A5)),
+      ),
+      child: SecondaryText(
+        message,
+        style: AppTypography.bodySmall.copyWith(color: const Color(0xFF991B1B)),
+      ),
+    );
+  }
+}
+
 class _IptvTile extends StatelessWidget {
   const _IptvTile({
     required this.iptv,
@@ -349,41 +718,53 @@ class _IptvTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = ShadTheme.of(context);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(12),
-      child: Container(
-        padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: AppRadius.card,
+        child: Ink(
+          width: 220,
+          padding: AppSpacing.cardInsets,
+          decoration: BoxDecoration(
             color: selected
-                ? theme.colorScheme.primary
-                : theme.colorScheme.border,
-          ),
-        ),
-        child: Row(
-          children: <Widget>[
-            Icon(LucideIcons.radioTower, color: theme.colorScheme.primary),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: <Widget>[
-                  Text(iptv.name, style: theme.textTheme.large),
-                  const SizedBox(height: 4),
-                  Text(
-                    iptv.isText ? '文本直播源' : '远程直播源',
-                    style: theme.textTheme.muted,
-                  ),
-                ],
-              ),
+                ? AppColors.primarySoft
+                : (isDark ? AppColors.surfaceDark : AppColors.surface),
+            borderRadius: AppRadius.card,
+            border: Border.all(
+              color: selected
+                  ? AppColors.primary
+                  : (isDark ? AppColors.borderDark : AppColors.border),
             ),
-            if (selected)
-              Icon(LucideIcons.check, color: theme.colorScheme.primary),
-          ],
+            boxShadow: isDark ? AppShadows.darkCard : AppShadows.sm,
+          ),
+          child: Row(
+            children: <Widget>[
+              const Icon(LucideIcons.radioTower, color: AppColors.primary),
+              const SizedBox(width: AppSpacing.md),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: <Widget>[
+                    PrimaryText(
+                      iptv.name,
+                      style: AppTypography.body.copyWith(fontWeight: FontWeight.w700),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: AppSpacing.xs),
+                    SecondaryText(
+                      iptv.isText ? '文本直播源' : '远程直播源',
+                    ),
+                  ],
+                ),
+              ),
+              if (selected)
+                const Icon(LucideIcons.badgeCheck, color: AppColors.primary),
+            ],
+          ),
         ),
       ),
     );
@@ -405,48 +786,60 @@ class _ChannelTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = ShadTheme.of(context);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(12),
-      child: Container(
-        padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(
-            color: selected ? theme.colorScheme.primary : theme.colorScheme.border,
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: AppRadius.card,
+        child: Ink(
+          padding: AppSpacing.cardInsets,
+          decoration: BoxDecoration(
+            color: selected
+                ? AppColors.primarySoft
+                : (isDark ? AppColors.surfaceSubtleDark : AppColors.surface),
+            borderRadius: AppRadius.card,
+            border: Border.all(
+              color: selected
+                  ? AppColors.primary
+                  : (isDark ? AppColors.borderDark : AppColors.border),
+            ),
           ),
-        ),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: <Widget>[
-            Icon(LucideIcons.tv, color: theme.colorScheme.primary),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: <Widget>[
-                  Text(channel.name, style: theme.textTheme.large),
-                  const SizedBox(height: 4),
-                  Text(channel.group ?? '未分组', style: theme.textTheme.muted),
-                  if (channel.url.isNotEmpty) ...<Widget>[
-                    const SizedBox(height: 4),
-                    Text(
-                      channel.url,
-                      style: theme.textTheme.small,
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: <Widget>[
+              const Icon(LucideIcons.tv, color: AppColors.primary),
+              const SizedBox(width: AppSpacing.md),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: <Widget>[
+                    PrimaryText(
+                      channel.name,
+                      style: AppTypography.body.copyWith(fontWeight: FontWeight.w700),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
+                    const SizedBox(height: AppSpacing.xs),
+                    SecondaryText(channel.group ?? '未分组'),
+                    if (channel.url.isNotEmpty) ...<Widget>[
+                      const SizedBox(height: AppSpacing.xs),
+                      CaptionText(
+                        channel.url,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
                   ],
-                ],
+                ),
               ),
-            ),
-            if (action != null) ...<Widget>[
-              const SizedBox(width: 12),
-              action!,
+              if (action != null) ...<Widget>[
+                const SizedBox(width: AppSpacing.md),
+                action!,
+              ],
             ],
-          ],
+          ),
         ),
       ),
     );
@@ -472,23 +865,21 @@ class _ProgramTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = ShadTheme.of(context);
-
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: <Widget>[
         SizedBox(
           width: 56,
-          child: Text(program.timeLabel, style: theme.textTheme.small),
+          child: CaptionText(program.timeLabel),
         ),
-        const SizedBox(width: 12),
+        const SizedBox(width: AppSpacing.md),
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: <Widget>[
-              Text(program.title, style: theme.textTheme.large),
-              const SizedBox(height: 4),
-              Text(program.status, style: theme.textTheme.muted),
+              PrimaryText(program.title, style: AppTypography.body.copyWith(fontWeight: FontWeight.w600)),
+              const SizedBox(height: AppSpacing.xs),
+              SecondaryText(program.status),
             ],
           ),
         ),
@@ -496,3 +887,5 @@ class _ProgramTile extends StatelessWidget {
     );
   }
 }
+
+void _noop() {}
