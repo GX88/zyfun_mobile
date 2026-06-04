@@ -16,6 +16,16 @@ class HistoryListNotifier extends AsyncNotifier<List<History>> {
     state = const AsyncLoading();
     state = await AsyncValue.guard(_repository.getRecentHistories);
   }
+
+  Future<void> deleteHistory(String id) async {
+    await _repository.deleteHistory(id);
+    await refresh();
+  }
+
+  Future<void> clearAll() async {
+    await _repository.clearAllHistories();
+    await refresh();
+  }
 }
 
 final historyListProvider =

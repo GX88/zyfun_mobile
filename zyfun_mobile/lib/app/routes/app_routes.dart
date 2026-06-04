@@ -6,6 +6,9 @@ import 'dart:convert';
 import '../../core/constants/constants.dart';
 import '../../presentation/pages/detail/video_detail_page.dart';
 import '../../presentation/pages/disclaimer/disclaimer_page.dart';
+import '../../presentation/pages/about/about_page.dart';
+import '../../presentation/pages/ai/ai_page.dart';
+import '../../presentation/pages/favorite/favorite_page.dart';
 import '../../presentation/pages/film/film_page.dart';
 import '../../presentation/pages/history/history_page.dart';
 import '../../presentation/pages/live/live_page.dart';
@@ -77,7 +80,7 @@ final GoRouter router = GoRouter(
     GoRoute(
       path: '/favorite',
       name: 'favorite',
-      builder: (context, state) => const PlaceholderPage(title: '收藏'),
+      builder: (context, state) => const FavoritePage(),
     ),
     
     // 设置页面
@@ -85,6 +88,18 @@ final GoRouter router = GoRouter(
       path: '/setting',
       name: 'setting',
       builder: (context, state) => const SettingPage(),
+    ),
+
+    GoRoute(
+      path: '/about',
+      name: 'about',
+      builder: (context, state) => const AboutPage(),
+    ),
+
+    GoRoute(
+      path: '/ai',
+      name: 'ai',
+      builder: (context, state) => const AiPage(),
     ),
     
     // 播放器页面
@@ -96,7 +111,28 @@ final GoRouter router = GoRouter(
         final title = state.uri.queryParameters['title'] ?? '播放器';
         final playUrl = state.uri.queryParameters['url'] ?? '';
         final episode = state.uri.queryParameters['episode'];
+        final siteId = state.uri.queryParameters['siteId'];
+        final currentIndex = int.tryParse(state.uri.queryParameters['index'] ?? '') ?? 0;
+        final encodedPlaylist = state.uri.queryParameters['playlist'];
         final encodedHeaders = state.uri.queryParameters['headers'];
+        List<Map<String, String>> playlist = const <Map<String, String>>[];
+        if (encodedPlaylist != null && encodedPlaylist.isNotEmpty) {
+          try {
+            final decoded = jsonDecode(encodedPlaylist);
+            if (decoded is List) {
+              playlist = decoded
+                  .whereType<Map>()
+                  .map(
+                    (item) => item.map(
+                      (key, value) => MapEntry(key.toString(), value.toString()),
+                    ),
+                  )
+                  .toList(growable: false);
+            }
+          } catch (_) {
+            playlist = const <Map<String, String>>[];
+          }
+        }
         Map<String, String>? httpHeaders;
         if (encodedHeaders != null && encodedHeaders.isNotEmpty) {
           try {
@@ -115,6 +151,9 @@ final GoRouter router = GoRouter(
           title: title,
           playUrl: playUrl,
           episode: episode,
+          siteId: siteId,
+          playlist: playlist,
+          currentIndex: currentIndex,
           httpHeaders: httpHeaders,
         );
       },

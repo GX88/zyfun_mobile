@@ -38,6 +38,8 @@ void main() {
       expect(state.duration, const Duration(minutes: 20));
       expect(state.playbackSpeed, 1);
       expect(state.volume, 100);
+      expect(state.brightness, 50);
+      expect(state.formatLabel, 'MP4');
       expect(capturedUri.toString(), 'https://example.com/video.mp4');
       expect(capturedHeaders, isEmpty);
     });
@@ -64,6 +66,9 @@ void main() {
 
       await notifier.setVolume(40);
       expect(container.read(playerNotifierProvider(source)).volume, 40);
+
+      notifier.setBrightness(70);
+      expect(container.read(playerNotifierProvider(source)).brightness, 70);
 
       await notifier.seekTo(const Duration(minutes: 5));
       expect(container.read(playerNotifierProvider(source)).position, const Duration(minutes: 5));
@@ -135,6 +140,31 @@ void main() {
 
       expect(capturedUri.toString(), 'https://example.com/live.m3u8');
       expect(capturedHeaders, sourceWithHeaders.httpHeaders);
+      expect(container.read(playerNotifierProvider(sourceWithHeaders)).formatLabel, 'HLS');
+    });
+
+    test('倍速和音量会被限制在允许范围内', () async {
+      final fakeController = FakePlayerController();
+      final container = ProviderContainer(
+        overrides: <Override>[
+          playerControllerFactoryProvider.overrideWithValue(
+            (uri, headers) async => fakeController,
+          ),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      final notifier = container.read(playerNotifierProvider(source).notifier);
+      await notifier.initialize(source);
+
+      await notifier.setPlaybackSpeed(10);
+      await notifier.setVolume(200);
+      notifier.setBrightness(-5);
+
+      final state = container.read(playerNotifierProvider(source));
+      expect(state.playbackSpeed, 3);
+      expect(state.volume, 100);
+      expect(state.brightness, 0);
     });
   });
 }

@@ -119,6 +119,22 @@ class _SettingPageState extends ConsumerState<SettingPage> {
                       child: const Text('查看 shadcn 组件库'),
                     ),
                   ),
+                  const SizedBox(height: 12),
+                  SizedBox(
+                    width: double.infinity,
+                    child: ShadButton.outline(
+                      onPressed: () => context.push('/about'),
+                      child: const Text('关于应用'),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  SizedBox(
+                    width: double.infinity,
+                    child: ShadButton(
+                      onPressed: () => context.push('/ai'),
+                      child: const Text('打开 AI 功能页'),
+                    ),
+                  ),
                 ],
               ),
             ),
@@ -189,7 +205,7 @@ class _SettingPageState extends ConsumerState<SettingPage> {
           ),
         ],
       ),
-      bottomNavigationBar: const AppBottomNavBar(selectedIndex: 3),
+      bottomNavigationBar: const AppBottomNavBar(selectedIndex: 4),
     );
   }
 

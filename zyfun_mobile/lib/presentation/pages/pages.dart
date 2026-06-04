@@ -1,5 +1,8 @@
+export 'about/about_page.dart';
+export 'ai/ai_page.dart';
 export 'detail/video_detail_page.dart';
 export 'disclaimer/disclaimer_page.dart';
+export 'favorite/favorite_page.dart';
 export 'film/film_page.dart';
 export 'history/history_page.dart';
 export 'live/live_page.dart';

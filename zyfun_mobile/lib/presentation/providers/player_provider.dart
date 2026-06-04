@@ -54,7 +54,9 @@ class PlayerState {
     this.duration = Duration.zero,
     this.playbackSpeed = 1,
     this.volume = 100,
+    this.brightness = 50,
     this.aspectRatio = 16 / 9,
+    this.formatLabel = '未知格式',
     this.errorMessage,
   });
 
@@ -66,7 +68,9 @@ class PlayerState {
   final Duration duration;
   final double playbackSpeed;
   final double volume;
+  final double brightness;
   final double aspectRatio;
+  final String formatLabel;
   final String? errorMessage;
 
   bool get isReady => errorMessage == null && !isInitializing;
@@ -80,7 +84,9 @@ class PlayerState {
     Duration? duration,
     double? playbackSpeed,
     double? volume,
+    double? brightness,
     double? aspectRatio,
+    String? formatLabel,
     String? errorMessage,
     bool clearError = false,
   }) {
@@ -93,7 +99,9 @@ class PlayerState {
       duration: duration ?? this.duration,
       playbackSpeed: playbackSpeed ?? this.playbackSpeed,
       volume: volume ?? this.volume,
+      brightness: brightness ?? this.brightness,
       aspectRatio: aspectRatio ?? this.aspectRatio,
+      formatLabel: formatLabel ?? this.formatLabel,
       errorMessage: clearError ? null : errorMessage ?? this.errorMessage,
     );
   }
@@ -300,7 +308,10 @@ class PlayerNotifier extends StateNotifier<PlayerState> {
       return;
     }
 
-    state = const PlayerState(isInitializing: true);
+    state = PlayerState(
+      isInitializing: true,
+      formatLabel: _detectFormatLabel(uri),
+    );
     await _disposeController();
 
     try {
@@ -355,7 +366,8 @@ class PlayerNotifier extends StateNotifier<PlayerState> {
       return;
     }
 
-    await controller.setPlaybackSpeed(speed);
+    final normalizedSpeed = speed.clamp(0.5, 3.0).toDouble();
+    await controller.setPlaybackSpeed(normalizedSpeed);
     _syncState();
   }
 
@@ -365,8 +377,13 @@ class PlayerNotifier extends StateNotifier<PlayerState> {
       return;
     }
 
-    await controller.setVolume(volume);
+    final normalizedVolume = volume.clamp(0, 100).toDouble();
+    await controller.setVolume(normalizedVolume);
     _syncState();
+  }
+
+  void setBrightness(double brightness) {
+    state = state.copyWith(brightness: brightness.clamp(0, 100).toDouble());
   }
 
   void _attachController(PlayerControllerAdapter controller) {
@@ -429,6 +446,23 @@ class PlayerNotifier extends StateNotifier<PlayerState> {
   void dispose() {
     _disposeController();
     super.dispose();
+  }
+
+  String _detectFormatLabel(Uri uri) {
+    final path = uri.path.toLowerCase();
+    if (path.endsWith('.m3u8')) {
+      return 'HLS';
+    }
+    if (path.endsWith('.mpd')) {
+      return 'DASH';
+    }
+    if (path.endsWith('.mp4')) {
+      return 'MP4';
+    }
+    if (path.endsWith('.flv')) {
+      return 'FLV';
+    }
+    return '自动识别';
   }
 }
 

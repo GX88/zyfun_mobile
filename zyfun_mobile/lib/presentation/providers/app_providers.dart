@@ -20,6 +20,8 @@ import '../../domain/repositories/history_repository.dart';
 import '../../domain/repositories/iptv_repository.dart';
 import '../../domain/repositories/setting_repository.dart';
 import '../../domain/repositories/site_repository.dart';
+import '../../services/background_playback_service.dart';
+import '../../services/player_platform_bridge.dart';
 
 final appDatabaseProvider = Provider<AppDatabase>((ref) {
   return AppDatabase.instance;
@@ -113,4 +115,12 @@ final configImportServiceProvider = Provider<ConfigImportService>((ref) {
     analyzeRepository: ref.watch(analyzeRepositoryProvider),
     settingRepository: ref.watch(settingRepositoryProvider),
   );
+});
+
+final backgroundPlaybackHandlerProvider = Provider<AppAudioHandler>((ref) {
+  return BackgroundPlaybackService.instance.handler;
+});
+
+final playerPlatformBridgeProvider = Provider<PlayerPlatformBridge>((ref) {
+  return const PlayerPlatformBridge();
 });

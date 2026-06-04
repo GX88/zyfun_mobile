@@ -62,10 +62,13 @@ class PlayerControlBar extends StatelessWidget {
                 initialValue: playbackSpeed,
                 selectedOptionBuilder: (context, value) => Text('${value}x'),
                 options: const <ShadOption<double>>[
-                  ShadOption(value: 0.75, child: Text('0.75x')),
+                 ShadOption(value: 0.75, child: Text('0.75x')),
+                  ShadOption(value: 0.5, child: Text('0.5x')),
                   ShadOption(value: 1, child: Text('1.0x')),
                   ShadOption(value: 1.25, child: Text('1.25x')),
                   ShadOption(value: 1.5, child: Text('1.5x')),
+                  ShadOption(value: 2, child: Text('2.0x')),
+                  ShadOption(value: 3, child: Text('3.0x')),
                 ],
                 onChanged: (value) {
                   if (value != null) {

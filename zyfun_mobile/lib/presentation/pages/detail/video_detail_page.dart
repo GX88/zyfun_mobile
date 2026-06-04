@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -5,6 +7,7 @@ import 'package:go_router/go_router.dart';
 import 'package:shadcn_ui/shadcn_ui.dart';
 
 import '../../../data/models/favorite.dart';
+import '../../../data/models/history.dart';
 import '../../../data/models/video.dart';
 import '../../providers/app_providers.dart';
 
@@ -123,9 +126,29 @@ class _VideoDetailPageState extends ConsumerState<VideoDetailPage> {
     );
   }
 
-  void _playEpisode(String episodeName, String episodeUrl) {
+  Future<void> _playEpisode(String episodeName, String episodeUrl, int currentIndex) async {
     final detail = _detail;
     if (detail == null) {
+      return;
+    }
+
+    final now = DateTime.now().millisecondsSinceEpoch;
+    await ref.read(historyRepositoryProvider).addHistory(
+          History(
+            id: '${widget.siteId}_${widget.videoId}_$episodeName',
+            siteId: widget.siteId,
+            videoId: widget.videoId,
+            title: detail.video.title,
+            cover: detail.video.cover,
+            description: detail.video.description,
+            episodeUrl: episodeUrl,
+            episodeName: episodeName,
+            createdAt: now,
+            updatedAt: now,
+          ),
+        );
+
+    if (!mounted) {
       return;
     }
 
@@ -135,6 +158,9 @@ class _VideoDetailPageState extends ConsumerState<VideoDetailPage> {
         'title': detail.video.title,
         'url': episodeUrl,
         'episode': episodeName,
+        'siteId': widget.siteId,
+        'index': '$currentIndex',
+        'playlist': jsonEncode(detail.playUrls),
       },
     );
     context.push(uri.toString());
@@ -208,13 +234,16 @@ class _VideoDetailPageState extends ConsumerState<VideoDetailPage> {
                     spacing: 8,
                     runSpacing: 8,
                     children: detail.playUrls
+                        .asMap()
+                        .entries
                         .map(
-                          (item) => ShadButton.outline(
+                          (entry) => ShadButton.outline(
                             onPressed: () => _playEpisode(
-                              item['name'] ?? '立即播放',
-                              item['url'] ?? '',
+                              entry.value['name'] ?? '立即播放',
+                              entry.value['url'] ?? '',
+                              entry.key,
                             ),
-                            child: Text(item['name'] ?? '立即播放'),
+                            child: Text(entry.value['name'] ?? '立即播放'),
                           ),
                         )
                         .toList(),

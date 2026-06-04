@@ -4,9 +4,11 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:shadcn_ui/shadcn_ui.dart';
 import 'package:zyfun_mobile/data/models/favorite.dart';
+import 'package:zyfun_mobile/data/models/history.dart';
 import 'package:zyfun_mobile/data/models/site.dart';
 import 'package:zyfun_mobile/data/models/video.dart';
 import 'package:zyfun_mobile/domain/repositories/favorite_repository.dart';
+import 'package:zyfun_mobile/domain/repositories/history_repository.dart';
 import 'package:zyfun_mobile/domain/repositories/site_repository.dart';
 import 'package:zyfun_mobile/presentation/pages/detail/video_detail_page.dart';
 import 'package:zyfun_mobile/presentation/providers/app_providers.dart';
@@ -18,12 +20,14 @@ void main() {
   testWidgets('VideoDetailPage 渲染详情并支持收藏', (tester) async {
     final siteRepository = _FakeSiteRepository();
     final favoriteRepository = _FakeFavoriteRepository();
+    final historyRepository = _FakeHistoryRepository();
 
     await tester.pumpWidget(
       ProviderScope(
         overrides: <Override>[
           siteRepositoryProvider.overrideWithValue(siteRepository),
           favoriteRepositoryProvider.overrideWithValue(favoriteRepository),
+          historyRepositoryProvider.overrideWithValue(historyRepository),
         ],
         child: const _TestDetailApp(
           child: VideoDetailPage(
@@ -46,13 +50,54 @@ void main() {
 
     expect(favoriteRepository.items.length, 1);
     expect(find.byTooltip('取消收藏'), findsOneWidget);
+
+    await tester.tap(find.widgetWithText(ShadButton, '第 1 集'));
+    await tester.pumpAndSettle();
+
+    expect(historyRepository.items.length, 1);
+    expect(historyRepository.items.single.episodeName, '第 1 集');
+  });
+
+  testWidgets('VideoDetailPage 播放时会携带连播上下文参数', (tester) async {
+    final siteRepository = _FakeSiteRepository();
+    final favoriteRepository = _FakeFavoriteRepository();
+    final historyRepository = _FakeHistoryRepository();
+    GoRouterState? visitedState;
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: <Override>[
+          siteRepositoryProvider.overrideWithValue(siteRepository),
+          favoriteRepositoryProvider.overrideWithValue(favoriteRepository),
+          historyRepositoryProvider.overrideWithValue(historyRepository),
+        ],
+        child: _TestDetailApp(
+          onPlayerRoute: (state) => visitedState = state,
+          child: const VideoDetailPage(
+            siteId: 'site-1',
+            videoId: 'video-1',
+            title: '流浪地球 2',
+          ),
+        ),
+      ),
+    );
+
+    await tester.pumpAndSettle();
+    await tester.tap(find.widgetWithText(ShadButton, '第 2 集'));
+    await tester.pumpAndSettle();
+
+    expect(visitedState?.uri.queryParameters['siteId'], 'site-1');
+    expect(visitedState?.uri.queryParameters['index'], '1');
+    expect(visitedState?.uri.queryParameters['playlist'], contains('第 1 集'));
+    expect(visitedState?.uri.queryParameters['playlist'], contains('第 2 集'));
   });
 }
 
 class _TestDetailApp extends StatelessWidget {
-  const _TestDetailApp({required this.child});
+  const _TestDetailApp({required this.child, this.onPlayerRoute});
 
   final Widget child;
+  final void Function(GoRouterState state)? onPlayerRoute;
 
   @override
   Widget build(BuildContext context) {
@@ -65,9 +110,12 @@ class _TestDetailApp extends StatelessWidget {
         ),
         GoRoute(
           path: '/player/:id',
-          builder: (context, state) => const Scaffold(
-            body: Center(child: Text('播放器测试页')),
-          ),
+          builder: (context, state) {
+            onPlayerRoute?.call(state);
+            return const Scaffold(
+              body: Center(child: Text('播放器测试页')),
+            );
+          },
         ),
       ],
     );
@@ -182,5 +230,44 @@ class _FakeFavoriteRepository implements FavoriteRepository {
           (item) => item != null,
           orElse: () => null,
         );
+  }
+}
+
+class _FakeHistoryRepository implements HistoryRepository {
+  final List<History> items = <History>[];
+
+  @override
+  Future<void> addHistory(History history) async {
+    items.removeWhere((item) => item.id == history.id);
+    items.add(history);
+  }
+
+  @override
+  Future<void> clearAllHistories() async {
+    items.clear();
+  }
+
+  @override
+  Future<void> deleteHistory(String id) async {
+    items.removeWhere((item) => item.id == id);
+  }
+
+  @override
+  Future<List<History>> getAllHistories() async => items;
+
+  @override
+  Future<History?> getHistoryById(String id) async {
+    return items.where((item) => item.id == id).cast<History?>().firstWhere(
+          (item) => item != null,
+          orElse: () => null,
+        );
+  }
+
+  @override
+  Future<List<History>> getRecentHistories({int limit = 50}) async => items.take(limit).toList();
+
+  @override
+  Future<void> updateHistory(History history) async {
+    await addHistory(history);
   }
 }

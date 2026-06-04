@@ -31,6 +31,10 @@ class AppBottomNavBar extends StatelessWidget {
           label: '历史',
         ),
         NavigationDestination(
+          icon: Icon(LucideIcons.heart),
+          label: '收藏',
+        ),
+        NavigationDestination(
           icon: Icon(LucideIcons.settings2),
           label: '设置',
         ),
@@ -48,6 +52,11 @@ class AppBottomNavBar extends StatelessWidget {
 
         if (index == 2) {
           context.go('/history');
+          return;
+        }
+
+        if (index == 3) {
+          context.go('/favorite');
           return;
         }
 
