@@ -23,6 +23,7 @@ void main() {
       expect(state.iptvs, hasLength(1));
       expect(state.selectedIptv?.id, 'demo-iptv');
       expect(state.channels, isNotEmpty);
+      expect(state.selectedChannel?.id, 'demo-1');
       expect(state.channels.first.name, '测试频道 1');
       expect(repository.defaultIptvId, 'demo-iptv');
     });
@@ -58,8 +59,38 @@ void main() {
       final state = container.read(iptvNotifierProvider);
       expect(state.selectedIptv?.id, 'iptv-b');
       expect(state.channels, hasLength(2));
+      expect(state.selectedChannel?.id, 'b-1');
       expect(state.channels.first.name, 'B1');
       expect(repository.defaultIptvId, 'iptv-b');
+    });
+
+    test('选择频道会更新当前频道状态', () async {
+      final repository = FakeIptvRepository(
+        iptvs: <Iptv>[
+          _buildIptv(id: 'iptv-a', name: '源 A', api: 'source-a'),
+        ],
+        channelsById: <String, List<Channel>>{
+          'iptv-a': <Channel>[
+            const Channel(id: 'a-1', name: 'A1', url: 'https://example.com/a1.m3u8'),
+            const Channel(id: 'a-2', name: 'A2', url: 'https://example.com/a2.m3u8'),
+          ],
+        },
+        defaultIptvId: 'iptv-a',
+      );
+      final container = ProviderContainer(
+        overrides: <Override>[
+          iptvRepositoryProvider.overrideWithValue(repository),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      final notifier = container.read(iptvNotifierProvider.notifier);
+      await notifier.loadIptvs();
+      notifier.selectChannel(container.read(iptvNotifierProvider).channels[1]);
+
+      final state = container.read(iptvNotifierProvider);
+      expect(state.selectedChannel?.id, 'a-2');
+      expect(state.selectedChannel?.name, 'A2');
     });
 
     test('频道加载失败会写入错误状态', () async {

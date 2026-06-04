@@ -9,6 +9,7 @@ class IptvState {
     this.iptvs = const <Iptv>[],
     this.channels = const <Channel>[],
     this.selectedIptv,
+    this.selectedChannel,
     this.isLoading = false,
     this.isChannelLoading = false,
     this.errorMessage,
@@ -17,6 +18,7 @@ class IptvState {
   final List<Iptv> iptvs;
   final List<Channel> channels;
   final Iptv? selectedIptv;
+  final Channel? selectedChannel;
   final bool isLoading;
   final bool isChannelLoading;
   final String? errorMessage;
@@ -25,15 +27,20 @@ class IptvState {
     List<Iptv>? iptvs,
     List<Channel>? channels,
     Iptv? selectedIptv,
+    Channel? selectedChannel,
     bool? isLoading,
     bool? isChannelLoading,
     String? errorMessage,
+    bool clearSelectedChannel = false,
     bool clearError = false,
   }) {
     return IptvState(
       iptvs: iptvs ?? this.iptvs,
       channels: channels ?? this.channels,
       selectedIptv: selectedIptv ?? this.selectedIptv,
+      selectedChannel: clearSelectedChannel
+          ? null
+          : selectedChannel ?? this.selectedChannel,
       isLoading: isLoading ?? this.isLoading,
       isChannelLoading: isChannelLoading ?? this.isChannelLoading,
       errorMessage: clearError ? null : errorMessage ?? this.errorMessage,
@@ -104,11 +111,16 @@ https://flutter.github.io/assets-for-api-docs/assets/videos/bee.mp4
   }
 
   Future<void> loadChannels(String iptvId) async {
-    state = state.copyWith(isChannelLoading: true, channels: const <Channel>[]);
+    state = state.copyWith(
+      isChannelLoading: true,
+      channels: const <Channel>[],
+      clearSelectedChannel: true,
+    );
     try {
       final channels = await _repository.getChannels(iptvId);
       state = state.copyWith(
         channels: channels,
+        selectedChannel: channels.isNotEmpty ? channels.first : null,
         isChannelLoading: false,
         clearError: true,
       );
@@ -118,6 +130,10 @@ https://flutter.github.io/assets-for-api-docs/assets/videos/bee.mp4
         errorMessage: error.toString(),
       );
     }
+  }
+
+  void selectChannel(Channel channel) {
+    state = state.copyWith(selectedChannel: channel, clearError: true);
   }
 }
 
