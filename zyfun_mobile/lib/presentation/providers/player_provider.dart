@@ -312,11 +312,12 @@ class PlayerNotifier extends StateNotifier<PlayerState> {
       await controller.initialize();
       await controller.play();
       _syncState();
-    } catch (_) {
+    } catch (error) {
       await _disposeController();
+      final message = error.toString().trim();
       state = state.copyWith(
         isInitializing: false,
-        errorMessage: '播放器初始化失败',
+        errorMessage: message.isEmpty ? '播放器初始化失败' : message,
       );
     }
   }

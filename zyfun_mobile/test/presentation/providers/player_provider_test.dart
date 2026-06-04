@@ -86,6 +86,24 @@ void main() {
       expect(state.errorMessage, '播放地址无效');
     });
 
+    test('初始化异常会透出底层错误信息', () async {
+      final container = ProviderContainer(
+        overrides: <Override>[
+          playerControllerFactoryProvider.overrideWithValue(
+            (uri, headers) async => throw Exception('HTTP 403 Forbidden'),
+          ),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      final notifier = container.read(playerNotifierProvider(source).notifier);
+      await notifier.initialize(source);
+
+      final state = container.read(playerNotifierProvider(source));
+      expect(state.isInitializing, isFalse);
+      expect(state.errorMessage, contains('HTTP 403 Forbidden'));
+    });
+
     test('初始化时会透传直播流请求头', () async {
       const sourceWithHeaders = PlayerSource(
         id: 'live-1',
