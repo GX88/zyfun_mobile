@@ -2,22 +2,6 @@ name: Android Debug APK
 
 on:
   workflow_dispatch:
-  push:
-    branches:
-      - master
-    paths:
-      - 'zyfun_mobile/lib/**'
-      - 'zyfun_mobile/android/**'
-      - 'zyfun_mobile/pubspec.yaml'
-      - 'zyfun_mobile/pubspec.lock'
-      - '.github/workflows/android-debug-apk.yml'
-  pull_request:
-    paths:
-      - 'zyfun_mobile/lib/**'
-      - 'zyfun_mobile/android/**'
-      - 'zyfun_mobile/pubspec.yaml'
-      - 'zyfun_mobile/pubspec.lock'
-      - '.github/workflows/android-debug-apk.yml'
 
 permissions:
   contents: read
