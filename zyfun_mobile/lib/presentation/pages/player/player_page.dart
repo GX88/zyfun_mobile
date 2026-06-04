@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shadcn_ui/shadcn_ui.dart';
 import 'package:video_player/video_player.dart';
 
+import '../../components/danmaku_switch.dart';
 import '../../components/player_control_bar.dart';
 import '../../providers/player_provider.dart';
 
@@ -110,9 +111,9 @@ class _PlayerPageState extends ConsumerState<PlayerPage> with WidgetsBindingObse
                         children: <Widget>[
                           _InfoLine(label: '显示模式', value: _isFullscreen ? '全屏横屏' : '页面内嵌'),
                           _InfoLine(label: '应用状态', value: _lifecycleLabel),
-                          _InfoLine(label: '播放器内核', value: 'video_player'),
-                          _InfoLine(label: '后台播放', value: '待第 13.6 阶段接入 audio_service'),
-                          _InfoLine(label: 'PIP 画中画', value: '待第 13.6 阶段接入原生 PIP'),
+                          const _InfoLine(label: '播放器内核', value: 'video_player'),
+                          const _InfoLine(label: '后台播放', value: '待第 13.6 阶段接入 audio_service'),
+                          const _InfoLine(label: 'PIP 画中画', value: '待第 13.6 阶段接入原生 PIP'),
                         ],
                       ),
                     ),

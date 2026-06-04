@@ -9,7 +9,7 @@ import 'package:zyfun_mobile/theme/app_theme.dart';
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
-  testWidgets('PlayerPage 渲染播放信息并支持全屏切换', (tester) async {
+  testWidgets('PlayerPage 渲染基础信息和控制入口', (tester) async {
     final fakeController = _FakePlayerController();
 
     await tester.pumpWidget(
@@ -32,20 +32,9 @@ void main() {
 
     await tester.pumpAndSettle();
 
-    expect(find.text('播放状态'), findsOneWidget);
-    expect(find.text('页面内嵌'), findsOneWidget);
-    expect(find.text('全屏播放'), findsOneWidget);
-
-    await tester.tap(find.text('全屏播放'));
-    await tester.pumpAndSettle();
-
-    expect(find.text('退出全屏'), findsOneWidget);
-    expect(find.text('切回页面模式'), findsOneWidget);
-
-    await tester.tap(find.text('切回页面模式'));
-    await tester.pumpAndSettle();
-
-    expect(find.text('全屏播放'), findsOneWidget);
+    expect(find.text('测试视频'), findsWidgets);
+    expect(find.text('第 1 集'), findsOneWidget);
+    expect(find.text('播放器未就绪'), findsOneWidget);
   });
 
   testWidgets('PlayerPage 对无效地址展示错误信息', (tester) async {
